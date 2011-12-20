@@ -33,6 +33,14 @@ class Application(object):
     
     def close_file(self):
         self._entry = None
+        self._statusbar.pop(self._statusbar_ctx)
+        self.window.set_title(APP_NAME)
+        self._sourceview.get_buffer().set_text("")
+        self._type_combo.set_active_id("Application")
+        self._name_entry.set_text("")
+        self._icon_entry.set_text("")
+        self._exec_entry.set_text("")
+        self._terminal_checkbutton.set_active(False)
         
     def error_dialog(self, message):
         """ Display a very basic error dialog. """
@@ -109,7 +117,7 @@ class Application(object):
         column.add_attribute(cell, "pixbuf", 0)
         cell = Gtk.CellRendererText()
         column.pack_start(cell, True)
-        column.add_attribute(cell, "text", 1)
+        column.add_attribute(cell, "markup", 1)
         self._treeview.append_column(column)
         
         self._missing_pixbuf = self.window.render_icon_pixbuf(Gtk.STOCK_MISSING_IMAGE,
@@ -162,7 +170,13 @@ class Application(object):
                     tooltip = entry.getGenericName()
                 else:
                     tooltip = entry.getName()
-                model.append((pixbuf, entry.getName(), desktop_file, tooltip,))
+                
+                if entry.isReadOnly():
+                    # TODO this is not theme-safe
+                    name = "<span color='#888888'><i>%s</i></span>" % entry.getName()
+                else:
+                    name = entry.getName()
+                model.append((pixbuf, name, desktop_file, tooltip,))
         self._treeview.set_sensitive(True)
         
     def on_exec_entry_icon_press(self, entry, icon_pos, event, data=None):
@@ -259,6 +273,7 @@ class Application(object):
         """
         model, iter = selection.get_selected()
         if model and iter:
+            self.close_file()
             self.open_file(model.get_value(iter, 2))
     
     def open_file(self, desktop_file):

@@ -3,7 +3,14 @@ from xdg.DesktopEntry import DesktopEntry
 from gi.repository import GdkPixbuf, Gtk
 
 class Entry(DesktopEntry):
-       
+    def isReadOnly(self):
+        """
+        Return True if the entry's file is read-only for this user.
+        """
+        if not os.access(self.filename, os.W_OK):
+            return True
+        return False
+        
     def getIconPixbuf(self, size):
         """
         Render the icon to a GdkPixbuf for the icon at the specified sized.

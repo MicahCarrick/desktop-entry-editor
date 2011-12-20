@@ -47,23 +47,58 @@ class Application(object):
         dialog.set_title("Error")
         dialog.run()
         dialog.destroy()
+    
+    def overwrite_existing_file_dialog(self, filename):
+        """
+        Prompt the user to overwrite an existing file.
+        """
+        if os.path.exists(filename):
+            message = "A file named %s already exists.\nDo you want to replace it?" \
+                % os.path.basename(filename)
+            dialog = Gtk.MessageDialog(self.window,
+                                       Gtk.DialogFlags.MODAL | 
+                                       Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                                       Gtk.MessageType.QUESTION, Gtk.ButtonsType.YES_NO, 
+                                       message)
+            dialog.set_title('Overwrite Existing File?')
+            r = dialog.run()
+            dialog.destroy()
+            
+            if r == Gtk.ResponseType.YES:
+                return True
+            else:
+                return False
+                
+        return True
+        
+    def _get_app_icon_pixbuf(self, size=None):
+        """
+        Get a new GdkPixbuf for the app's main icon rendered at size.
+        """
+        pixbuf_file = os.path.join(DATA_DIR, "icons", "scalable", "desktop-entry-editor.svg")
+        if size:
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(pixbuf_file, size, size, True)
+        else:
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file(pixbuf_file)
+        return pixbuf
         
     def __init__(self):
         """
         Build UI from Glade XML file found in DATA_DIR.
         """
-        self._settings = Gio.Settings.new(SETTINGS_SCHEMA)
+        
         builder = Gtk.Builder()
         try:
             builder.add_from_file(os.path.join(DATA_DIR, "main_window.ui"))
         except Exception as e:
             sys.exit("Failed to load UI file: %s." % str(e))
         self.window = builder.get_object("main_window")
-        self.window.set_icon_name(Gtk.STOCK_EXECUTE)
+        # TODO use custom icon name (themed icon)
+        self.window.set_icon(self._get_app_icon_pixbuf())
         self._notebook = builder.get_object("notebook")
         self._statusbar = builder.get_object("statusbar")
         self._statusbar_ctx = self._statusbar.get_context_id("Selected entry.")
-        self._folder_select = builder.get_object("folder_select")
+        self._init_settings()
         self._init_treeview(builder)
         self._init_basic_tab(builder)
         self._init_source_tab(builder)
@@ -75,13 +110,22 @@ class Application(object):
         )
         self._open_file_widgets= (
             builder.get_object("close_menuitem"),
-            builder.get_object("save_as_menuitem")
+            builder.get_object("save_as_menuitem"),
+            self._notebook,
         )
         
         builder.connect_signals(self)
         self._state = self.STATE_NORMAL
         self.close_file()
     
+    def _init_settings(self):
+        """
+        Initialize a GSettings object and connect callbacks.
+        """
+        self._settings = Gio.Settings.new(SETTINGS_SCHEMA)
+        self._settings.connect("changed::show-read-only-files", 
+                               lambda settings,key: self._load_treeview())
+        
     def _init_source_tab(self, builder):
         """
         Initialize a GtkSourceView to show the desktop entry in the 'Source' tab
@@ -171,7 +215,7 @@ class Application(object):
             [widget.set_sensitive(False) for widget in self._open_file_widgets]
             self._state = self.STATE_NORMAL
             return
-        
+            
         # statusbar
         self._statusbar.pop(self._statusbar_ctx)
         self._statusbar.push(self._statusbar_ctx, entry.filename)
@@ -186,13 +230,14 @@ class Application(object):
         # populate advanced tab
 
         # load file into source view
-        self._sourceview.set_editable(False)
-        buffer = self._sourceview.get_buffer()
-        with open(entry.filename, 'r') as f:
-            buffer.set_text(f.read())
-        f.closed
-        self._sourceview.set_editable(True)
-        
+        if entry.filename:
+            self._sourceview.set_editable(False)
+            buffer = self._sourceview.get_buffer()
+            with open(entry.filename, 'r') as f:
+                buffer.set_text(f.read())
+            f.closed
+            self._sourceview.set_editable(True)
+            
         [widget.set_sensitive(True) for widget in self._open_file_widgets]
         self._state = self.STATE_NORMAL
         
@@ -220,18 +265,31 @@ class Application(object):
                 else:
                     tooltip = entry.getName()
                 
-                try:
-                    # TODO this markup is not theme-safe
-                    entry.validate()
-                    if entry.isReadOnly():
+                if entry.isReadOnly():
+                    if self._settings.get_boolean('show-read-only-files'):
                         markup = "<span color='#888888'>%s</span>" % entry.getName()
                     else:
-                        markup = entry.getName()
-                except ValidationError, e:
-                    markup = "<span color='red'>%s</span>" % entry.getName()
+                        continue # skip read-only per settings
+                else:
+                    markup = entry.getName()
                 
                 model.append((pixbuf, entry.getName(), desktop_file, tooltip, markup,))
         self._treeview.set_sensitive(True)
+    
+    def new_file(self):
+        """
+        Create a new, empty desktop entry.
+        """
+        old_entry = self._entry
+        self._entry = Entry()
+        filename = self.save_dialog()
+        if filename:
+            self._entry.new(filename)
+            self._entry.set("Name", "Untitled")
+            logger.debug(self._entry.getName())
+            self.save_file(filename)
+        else:
+            self._entry = old_entry
         
     def on_exec_entry_icon_press(self, entry, icon_pos, event, data=None):
         """
@@ -246,6 +304,9 @@ class Application(object):
     def on_file_close_activate(self, menuitem, data=None):
         self.close_file()
     
+    def on_file_new_activate(self, menuitem, data=None):
+        self.new_file()
+        
     def on_help_about_activate(self, menuitem, data=None):
         """
         Show the about dialog.
@@ -255,7 +316,7 @@ class Application(object):
         dialog.set_modal(True)
         dialog.set_authors(("Micah Carrick <micah@quixotix.com>",))
         dialog.set_copyright("Copyright (c) 2011, Quixotix Software LLC")
-        dialog.set_logo_icon_name(Gtk.STOCK_EXECUTE)
+        dialog.set_logo(self._get_app_icon_pixbuf(128))
         dialog.set_program_name(APP_NAME)
         dialog.set_version(APP_VERSION)
         dialog.set_comments(APP_DESCRIPTION)
@@ -366,6 +427,40 @@ class Application(object):
         self.window.show()
         Gtk.main()
     
+    def save_dialog(self):
+        """
+        Return a user-selected save filename or None if the user cancels.
+        """
+        filename = None
+        
+        chooser = Gtk.FileChooserDialog("Save File...", self.window,
+                                        Gtk.FileChooserAction.SAVE,
+                                        (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, 
+                                         Gtk.STOCK_SAVE, Gtk.ResponseType.OK))
+        if self._entry and self._entry.filename:
+            chooser.set_filename(self._entry.filename)
+        else:
+            for path in xdg_data_dirs:
+                path = os.path.join(path, "applications")
+                if os.path.exists(path) and os.access(path, os.W_OK):
+                    chooser.set_current_folder(path)
+                    break
+                    
+        response = chooser.run()
+        if response == Gtk.ResponseType.OK: 
+            filename = chooser.get_filename()
+        chooser.destroy()
+        if filename:
+            if not self.overwrite_existing_file_dialog(filename):
+                filename = None
+        return filename
+        
+    def save_file(self, filename):
+        self._entry.write(filename)
+        #self._entry.parse(filename)
+        self._load_treeview()
+        self._load_desktop_entry_ui()
+        
     def set_modified(self, modified=True):
         """
         Set the modified flag on the entry and update the titlebar

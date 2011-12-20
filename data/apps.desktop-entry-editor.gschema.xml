@@ -1,25 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
   <schema id="apps.desktop-entry-editor" path="/apps/desktop-entry-editor/">
-    <key type="b" name="restore-window-geometry">
+    <key type="b" name="show-read-only-files">
       <default>true</default>
-      <summary>Restore Window Geometry</summary>
-      <description>When true, the main application window's size and position are restored at startup.</description>
-    </key>
-    <key type="i" name="window-width">
-      <default>500</default>
-      <summary>Window Width</summary>
-      <description>The width of the main application window.</description>
-    </key>
-    <key type="i" name="window-height">
-      <default>400</default>
-      <summary>Window Height</summary>
-      <description>The height of the main application window.</description>
-    </key>
-    <key type="i" name="paned-position">
-      <default>200</default>
-      <summary>Paned Position</summary>
-      <description>The position of the paned widget which determines the width of the desktop entry tree view.</description>
+      <summary>Show Read-Only Files</summary>
+      <description>When true, the list of desktop entries in the side pane will include read-only files.</description>
     </key>
   </schema>
 </schemalist>

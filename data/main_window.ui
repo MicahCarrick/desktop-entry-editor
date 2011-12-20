@@ -37,6 +37,7 @@
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
                         <accelerator key="n" signal="activate" modifiers="GDK_CONTROL_MASK"/>
+                        <signal name="activate" handler="on_file_new_activate" swapped="no"/>
                       </object>
                     </child>
                     <child>
@@ -180,10 +181,9 @@
         <child>
           <object class="GtkPaned" id="paned">
             <property name="visible">True</property>
-            <property name="can_focus">True</property>
+            <property name="can_focus">False</property>
             <property name="margin_left">2</property>
             <property name="margin_right">2</property>
-            <property name="vexpand">True</property>
             <child>
               <object class="GtkBox" id="box3">
                 <property name="visible">True</property>
@@ -385,6 +385,7 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="hexpand">True</property>
+                                <property name="has_frame">False</property>
                                 <property name="invisible_char">●</property>
                                 <property name="invisible_char_set">True</property>
                                 <property name="primary_icon_stock">gtk-execute</property>

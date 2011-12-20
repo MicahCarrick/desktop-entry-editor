@@ -25,18 +25,16 @@ logger.setLevel(LOG_LEVEL)
 
 class Application(object):
     
-    DESKTOP_ENTRY_DIRS = (
-        os.path.join(os.path.expanduser("~"), ".local", "share", "applications"),
-        os.path.join("usr", "share", "applications"),
-        os.path.join("usr", "local", "share", "applications"),
-    )
+    STATE_NORMAL = 0
+    STATE_LOADING = 1    
     
     def close_file(self):
         """
         Close the currently open desktop entry file.
         """
         self._entry = None
-        self.update_ui_for_entry()
+        self._load_desktop_entry_ui()
+        # TODO deselect tree view
         
     def error_dialog(self, message):
         """ Display a very basic error dialog. """
@@ -62,8 +60,7 @@ class Application(object):
             sys.exit("Failed to load UI file: %s." % str(e))
         self.window = builder.get_object("main_window")
         self.window.set_icon_name(Gtk.STOCK_EXECUTE)
-        #paned = builder.get_object("paned")
-        #paned.set_position(self._settings.get_int("paned-position"))
+        self._notebook = builder.get_object("notebook")
         self._statusbar = builder.get_object("statusbar")
         self._statusbar_ctx = self._statusbar.get_context_id("Selected entry.")
         self._folder_select = builder.get_object("folder_select")
@@ -71,7 +68,18 @@ class Application(object):
         self._init_basic_tab(builder)
         self._init_source_tab(builder)
         
+        # groups of widgets that share state (should have used GtkActions)
+        self._save_widgets = (
+            builder.get_object("save_button"),
+            builder.get_object("save_menuitem")
+        )
+        self._open_file_widgets= (
+            builder.get_object("close_menuitem"),
+            builder.get_object("save_as_menuitem")
+        )
+        
         builder.connect_signals(self)
+        self._state = self.STATE_NORMAL
         self.close_file()
     
     def _init_source_tab(self, builder):
@@ -144,6 +152,50 @@ class Application(object):
         self._type_combo.set_id_column(0)
         self._type_combo.set_active_id("Application")
     
+    def _load_desktop_entry_ui(self):
+        """
+        Load the current Entry into the various widgets of the GUI.
+        """
+        self._state = self.STATE_LOADING
+        entry = self._entry
+        self._update_ui()
+        if not entry:
+            # clear all
+            self._statusbar.pop(self._statusbar_ctx)
+            self._sourceview.get_buffer().set_text("")
+            self._type_combo.set_active_id("Application")
+            self._name_entry.set_text("")
+            self._icon_entry.set_text("")
+            self._exec_entry.set_text("")
+            self._terminal_checkbutton.set_active(False)
+            [widget.set_sensitive(False) for widget in self._open_file_widgets]
+            self._state = self.STATE_NORMAL
+            return
+        
+        # statusbar
+        self._statusbar.pop(self._statusbar_ctx)
+        self._statusbar.push(self._statusbar_ctx, entry.filename)
+
+        # populate basic tab
+        self._type_combo.set_active_id(entry.getType())
+        self._name_entry.set_text(entry.getName())
+        self._icon_entry.set_text(entry.getIcon())
+        self._exec_entry.set_text(entry.getExec())
+        self._terminal_checkbutton.set_active(entry.getTerminal())
+
+        # populate advanced tab
+
+        # load file into source view
+        self._sourceview.set_editable(False)
+        buffer = self._sourceview.get_buffer()
+        with open(entry.filename, 'r') as f:
+            buffer.set_text(f.read())
+        f.closed
+        self._sourceview.set_editable(True)
+        
+        [widget.set_sensitive(True) for widget in self._open_file_widgets]
+        self._state = self.STATE_NORMAL
+        
     def _load_treeview(self):
         """
         Load the treeview with the .desktop entries found at path.
@@ -190,10 +242,9 @@ class Application(object):
             return
         retval = subprocess.call(self._entry.getExec(), shell=True)
         logger.debug("Exited with code " + str(retval))
-        
-    def on_folder_select_folder_changed(self, chooser, data=None):
-        print "folder-changed"
-        #self._load_treeview(chooser.get_filename())
+    
+    def on_file_close_activate(self, menuitem, data=None):
+        self.close_file()
     
     def on_help_about_activate(self, menuitem, data=None):
         """
@@ -216,6 +267,8 @@ class Application(object):
         """
         Update the primary icon as the user enters text.
         """
+        if self._state == self.STATE_NORMAL:
+            self.set_modified(True)
         icon = entry.get_text()
         icon_theme = Gtk.IconTheme.get_default()
         if os.path.exists(icon):
@@ -289,7 +342,7 @@ class Application(object):
             self.error_dialog(e)
             return
         
-        self.update_ui_for_entry()
+        self._load_desktop_entry_ui()
         # validate in save
         """
         try:
@@ -313,49 +366,36 @@ class Application(object):
         self.window.show()
         Gtk.main()
     
-    def update_ui_for_entry(self):
+    def set_modified(self, modified=True):
+        """
+        Set the modified flag on the entry and update the titlebar
+        """
+        self._entry.is_modified = modified
+        self._update_ui()
+        
+        
+    def _update_ui(self):
+        """
+        Update the UI to reflect the state of the the current Entry.
+        """
         entry = self._entry
+        
+        # titlebar
         if not entry:
-            # clear all
-            self._statusbar.pop(self._statusbar_ctx)
             self.window.set_title(APP_NAME)
-            self._sourceview.get_buffer().set_text("")
-            self._type_combo.set_active_id("Application")
-            self._name_entry.set_text("")
-            self._icon_entry.set_text("")
-            self._exec_entry.set_text("")
-            self._terminal_checkbutton.set_active(False)
-            return
-        
-        # statusbar
-        self._statusbar.pop(self._statusbar_ctx)
-        self._statusbar.push(self._statusbar_ctx, entry.filename)
-        
-        # window title
-        read_only = modified_indicator = ""
-        if entry.isReadOnly():
-            read_only = "(read-only)"
-        if entry.is_modified:
-            modified_indicator = "*"
-        self.window.set_title("%s%s %s - %s" % (modified_indicator,
-                                                os.path.basename(entry.filename), 
-                                                read_only,
-                                                APP_NAME))
-        
-        # load file into source view
-        self._sourceview.set_editable(False)
-        buffer = self._sourceview.get_buffer()
-        with open(entry.filename, 'r') as f:
-            buffer.set_text(f.read())
-        f.closed
-        self._sourceview.set_editable(True)
-        
-        # populate basic tab
-        self._type_combo.set_active_id(entry.getType())
-        self._name_entry.set_text(entry.getName())
-        self._icon_entry.set_text(entry.getIcon())
-        self._exec_entry.set_text(entry.getExec())
- 
-        self._terminal_checkbutton.set_active(entry.getTerminal())
-        
-        
+        else:
+            read_only = modified_indicator = ""
+            if entry.isReadOnly():
+                read_only = "(read-only)"
+            if entry.is_modified:
+                modified_indicator = "*"
+            self.window.set_title("%s%s %s - %s" % (modified_indicator,
+                                                    os.path.basename(entry.filename), 
+                                                    read_only,
+                                                    APP_NAME))
+        # save buttons 
+        if entry and entry.isModified() and not entry.isReadOnly():
+            [widget.set_sensitive(True) for widget in self._save_widgets]
+        else:
+            [widget.set_sensitive(False) for widget in self._save_widgets]
+         

@@ -7,6 +7,9 @@ class Entry(DesktopEntry):
     def __init__(self, filename=None):
         DesktopEntry.__init__(self, filename)
         self.is_modified = False
+    
+    def isModified(self):
+        return self.is_modified
         
     def isReadOnly(self):
         """

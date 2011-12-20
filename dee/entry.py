@@ -3,6 +3,7 @@ from xdg.DesktopEntry import DesktopEntry
 from gi.repository import GdkPixbuf, Gtk
 
 class Entry(DesktopEntry):
+       
     def getIconPixbuf(self, size):
         """
         Render the icon to a GdkPixbuf for the icon at the specified sized.

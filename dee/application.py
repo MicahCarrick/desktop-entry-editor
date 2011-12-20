@@ -12,6 +12,8 @@ from xdg.DesktopEntry import  ParsingError, ValidationError
 from xdg.BaseDirectory import xdg_data_dirs
 
 APP_NAME = "Desktop Entry Editor"
+APP_DESCRIPTION = "A desktop entry (application launcher) editor\nbased on the freedesktop.org specifications."
+APP_VERSION = "0.1"
 DATA_DIR = "data"
 # XDG_DATA_DIR
 SETTINGS_SCHEMA = "apps.desktop-entry-editor"
@@ -29,6 +31,9 @@ class Application(object):
         os.path.join("usr", "local", "share", "applications"),
     )
     
+    def close_file(self):
+        self._entry = None
+        
     def error_dialog(self, message):
         """ Display a very basic error dialog. """
         logger.warn(message)
@@ -63,7 +68,7 @@ class Application(object):
         self._init_source_tab(builder)
         
         builder.connect_signals(self)
-        self._desktop_file = None
+        self.close_file()
     
     def _init_source_tab(self, builder):
         """
@@ -121,21 +126,17 @@ class Application(object):
         self._terminal_checkbutton = builder.get_object("terminal_checkbutton")
         
         # populate type combo box
-        model = Gtk.ListStore(GObject.TYPE_STRING, GObject.TYPE_STRING)
-        model.append((Gtk.STOCK_EXECUTE, "Application",))
-        model.append((Gtk.STOCK_DIRECTORY, "Directory",))
-        model.append(('web-browser', "Link",))
-        # TODO: register a stock icon for link
-        
-        cell = Gtk.CellRendererPixbuf()
-        self._type_combo.pack_start(cell, False)
-        self._type_combo.add_attribute(cell, "icon-name", 0)
+        model = Gtk.ListStore(GObject.TYPE_STRING)
+        model.append(("Application",))
+        model.append(("Directory",))
+        model.append(("Link",))
+
         cell = Gtk.CellRendererText()
         self._type_combo.pack_start(cell, True)
-        self._type_combo.add_attribute(cell, "text", 1)
+        self._type_combo.add_attribute(cell, "text", 0)
         
         self._type_combo.set_model(model)
-        self._type_combo.set_id_column(1)
+        self._type_combo.set_id_column(0)
         self._type_combo.set_active_id("Application")
     
     def _load_treeview(self):
@@ -169,16 +170,32 @@ class Application(object):
         Execute the command when the user presses the icon in the entry.
         """
         # TODO async? Wait for retval?
-        if not self._desktop_file:
+        if not self._entry:     
             return
-        entry = Entry(self._desktop_file)                
-        retval = subprocess.call(entry.getExec(), shell=True)
+        retval = subprocess.call(self._entry.getExec(), shell=True)
         logger.debug("Exited with code " + str(retval))
         
     def on_folder_select_folder_changed(self, chooser, data=None):
         print "folder-changed"
         #self._load_treeview(chooser.get_filename())
     
+    def on_help_about_activate(self, menuitem, data=None):
+        """
+        Show the about dialog.
+        """
+        dialog = Gtk.AboutDialog()
+        dialog.set_transient_for(self.window)
+        dialog.set_modal(True)
+        dialog.set_authors(("Micah Carrick <micah@quixotix.com>",))
+        dialog.set_copyright("Copyright (c) 2011, Quixotix Software LLC")
+        dialog.set_logo_icon_name(Gtk.STOCK_EXECUTE)
+        dialog.set_program_name(APP_NAME)
+        dialog.set_version(APP_VERSION)
+        dialog.set_comments(APP_DESCRIPTION)
+        dialog.run()
+        dialog.destroy()
+        
+        
     def on_icon_entry_changed(self, entry, data=None):
         """
         Update the primary icon as the user enters text.
@@ -199,8 +216,7 @@ class Application(object):
         Show the icon preview dialog if the user clicks the icon entry's primary
         icon.
         """
-        entry = Entry(self._desktop_file)
-        if not entry:
+        if not self._entry:
             return
         builder = Gtk.Builder()
         try:
@@ -209,7 +225,7 @@ class Application(object):
             sys.exit("Failed to load UI file: %s." % str(e))
         dialog = builder.get_object("icon_preview_dialog")
         label = builder.get_object("icon_name_label")
-        label.set_markup("<b>%s</b>" % entry.getIcon())
+        label.set_markup("<b>%s</b>" % self._entry.getIcon())
         button = builder.get_object("close_button")
         button.connect("clicked", lambda button,dialog: dialog.destroy(), dialog)
         dialog.set_transient_for(self.window)
@@ -217,7 +233,7 @@ class Application(object):
         for size in (16,24,32,48,64,128):
             image = builder.get_object("image_%s" % str(size))
             if image:
-                image.set_from_pixbuf(entry.getIconPixbuf(size))
+                image.set_from_pixbuf(self._entry.getIconPixbuf(size))
         dialog.show()
         
     def on_treeview_button_press_event(self, treeview, event, data=None):
@@ -250,9 +266,8 @@ class Application(object):
         Open the specified desktop file.
         """
         # TODO make sure this desktop file is selected in the list
-        self._desktop_file = desktop_file
         try:
-            entry = Entry(desktop_file)
+            self._entry = Entry(desktop_file)
         except ParsingError, e:
             self.error_dialog(e)
             return
@@ -280,15 +295,15 @@ class Application(object):
         self._sourceview.set_editable(True)
         
         # populate basic tab
-        if entry.getType():
-            self._type_combo.set_active_id(entry.getType())
-        if entry.getName():
-            self._name_entry.set_text(entry.getName())
-        self._icon_entry.set_text(entry.getIcon())
-        if entry.getExec():
-            self._exec_entry.set_text(entry.getExec())
+        if self._entry.getType():
+            self._type_combo.set_active_id(self._entry.getType())
+        if self._entry.getName():
+            self._name_entry.set_text(self._entry.getName())
+        self._icon_entry.set_text(self._entry.getIcon())
+        if self._entry.getExec():
+            self._exec_entry.set_text(self._entry.getExec())
  
-        self._terminal_checkbutton.set_active(entry.getTerminal())
+        self._terminal_checkbutton.set_active(self._entry.getTerminal())
           
     def quit(self, widget=None, data=None):
         """

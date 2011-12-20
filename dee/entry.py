@@ -3,6 +3,11 @@ from xdg.DesktopEntry import DesktopEntry
 from gi.repository import GdkPixbuf, Gtk
 
 class Entry(DesktopEntry):
+    
+    def __init__(self, filename=None):
+        DesktopEntry.__init__(self, filename)
+        self.is_modified = False
+        
     def isReadOnly(self):
         """
         Return True if the entry's file is read-only for this user.

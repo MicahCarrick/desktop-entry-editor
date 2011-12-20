@@ -32,15 +32,11 @@ class Application(object):
     )
     
     def close_file(self):
+        """
+        Close the currently open desktop entry file.
+        """
         self._entry = None
-        self._statusbar.pop(self._statusbar_ctx)
-        self.window.set_title(APP_NAME)
-        self._sourceview.get_buffer().set_text("")
-        self._type_combo.set_active_id("Application")
-        self._name_entry.set_text("")
-        self._icon_entry.set_text("")
-        self._exec_entry.set_text("")
-        self._terminal_checkbutton.set_active(False)
+        self.update_ui_for_entry()
         
     def error_dialog(self, message):
         """ Display a very basic error dialog. """
@@ -106,7 +102,8 @@ class Application(object):
         model = Gtk.ListStore(GdkPixbuf.Pixbuf,         # icon
                               GObject.TYPE_STRING,      # name
                               GObject.TYPE_STRING,      # desktop entry file
-                              GObject.TYPE_STRING)      # tooltip
+                              GObject.TYPE_STRING,      # tooltip
+                              GObject.TYPE_STRING)      # markup
         model.set_sort_column_id(1, Gtk.SortType.ASCENDING)
         self._treeview.set_model(model)
         self._treeview.set_headers_visible(False)
@@ -117,7 +114,7 @@ class Application(object):
         column.add_attribute(cell, "pixbuf", 0)
         cell = Gtk.CellRendererText()
         column.pack_start(cell, True)
-        column.add_attribute(cell, "markup", 1)
+        column.add_attribute(cell, "markup", 4)
         self._treeview.append_column(column)
         
         self._missing_pixbuf = self.window.render_icon_pixbuf(Gtk.STOCK_MISSING_IMAGE,
@@ -171,12 +168,17 @@ class Application(object):
                 else:
                     tooltip = entry.getName()
                 
-                if entry.isReadOnly():
-                    # TODO this is not theme-safe
-                    name = "<span color='#888888'><i>%s</i></span>" % entry.getName()
-                else:
-                    name = entry.getName()
-                model.append((pixbuf, name, desktop_file, tooltip,))
+                try:
+                    # TODO this markup is not theme-safe
+                    entry.validate()
+                    if entry.isReadOnly():
+                        markup = "<span color='#888888'>%s</span>" % entry.getName()
+                    else:
+                        markup = entry.getName()
+                except ValidationError, e:
+                    markup = "<span color='red'>%s</span>" % entry.getName()
+                
+                model.append((pixbuf, entry.getName(), desktop_file, tooltip, markup,))
         self._treeview.set_sensitive(True)
         
     def on_exec_entry_icon_press(self, entry, icon_pos, event, data=None):
@@ -286,6 +288,8 @@ class Application(object):
         except ParsingError, e:
             self.error_dialog(e)
             return
+        
+        self.update_ui_for_entry()
         # validate in save
         """
         try:
@@ -294,31 +298,6 @@ class Application(object):
             self.error_dialog(e)
             return
         """
-        # statusbar
-        self._statusbar.pop(self._statusbar_ctx)
-        self._statusbar.push(self._statusbar_ctx, desktop_file)
-        
-        # window title
-        self.window.set_title("%s - %s" % (os.path.basename(desktop_file), APP_NAME))
-        
-        # load file into source view
-        self._sourceview.set_editable(False)
-        buffer = self._sourceview.get_buffer()
-        with open(desktop_file, 'r') as f:
-            buffer.set_text(f.read())
-        f.closed
-        self._sourceview.set_editable(True)
-        
-        # populate basic tab
-        if self._entry.getType():
-            self._type_combo.set_active_id(self._entry.getType())
-        if self._entry.getName():
-            self._name_entry.set_text(self._entry.getName())
-        self._icon_entry.set_text(self._entry.getIcon())
-        if self._entry.getExec():
-            self._exec_entry.set_text(self._entry.getExec())
- 
-        self._terminal_checkbutton.set_active(self._entry.getTerminal())
           
     def quit(self, widget=None, data=None):
         """
@@ -333,11 +312,50 @@ class Application(object):
         """
         self.window.show()
         Gtk.main()
+    
+    def update_ui_for_entry(self):
+        entry = self._entry
+        if not entry:
+            # clear all
+            self._statusbar.pop(self._statusbar_ctx)
+            self.window.set_title(APP_NAME)
+            self._sourceview.get_buffer().set_text("")
+            self._type_combo.set_active_id("Application")
+            self._name_entry.set_text("")
+            self._icon_entry.set_text("")
+            self._exec_entry.set_text("")
+            self._terminal_checkbutton.set_active(False)
+            return
         
-    def set_folder(self, path):
-        """
-        By setting the folder on the GtkFileChooserButton, the treeview will
-        be re-populated with contents of the currently selected folder.
-        """
-        self._folder_select.set_current_folder(path)
+        # statusbar
+        self._statusbar.pop(self._statusbar_ctx)
+        self._statusbar.push(self._statusbar_ctx, entry.filename)
+        
+        # window title
+        read_only = modified_indicator = ""
+        if entry.isReadOnly():
+            read_only = "(read-only)"
+        if entry.is_modified:
+            modified_indicator = "*"
+        self.window.set_title("%s%s %s - %s" % (modified_indicator,
+                                                os.path.basename(entry.filename), 
+                                                read_only,
+                                                APP_NAME))
+        
+        # load file into source view
+        self._sourceview.set_editable(False)
+        buffer = self._sourceview.get_buffer()
+        with open(entry.filename, 'r') as f:
+            buffer.set_text(f.read())
+        f.closed
+        self._sourceview.set_editable(True)
+        
+        # populate basic tab
+        self._type_combo.set_active_id(entry.getType())
+        self._name_entry.set_text(entry.getName())
+        self._icon_entry.set_text(entry.getIcon())
+        self._exec_entry.set_text(entry.getExec())
+ 
+        self._terminal_checkbutton.set_active(entry.getTerminal())
+        
         

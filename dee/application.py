@@ -9,8 +9,12 @@ from gi.repository import GtkSource
 from dee.entry import Entry
 from xdg.DesktopEntry import  ParsingError, ValidationError
 
+from xdg.BaseDirectory import xdg_data_dirs
+
 APP_NAME = "Desktop Entry Editor"
 DATA_DIR = "data"
+# XDG_DATA_DIR
+SETTINGS_SCHEMA = "apps.desktop-entry-editor"
 
 logging.basicConfig()
 LOG_LEVEL = logging.DEBUG
@@ -41,6 +45,7 @@ class Application(object):
         """
         Build UI from Glade XML file found in DATA_DIR.
         """
+        self._settings = Gio.Settings.new(SETTINGS_SCHEMA)
         builder = Gtk.Builder()
         try:
             builder.add_from_file(os.path.join(DATA_DIR, "main_window.ui"))
@@ -48,19 +53,16 @@ class Application(object):
             sys.exit("Failed to load UI file: %s." % str(e))
         self.window = builder.get_object("main_window")
         self.window.set_icon_name(Gtk.STOCK_EXECUTE)
+        #paned = builder.get_object("paned")
+        #paned.set_position(self._settings.get_int("paned-position"))
         self._statusbar = builder.get_object("statusbar")
         self._statusbar_ctx = self._statusbar.get_context_id("Selected entry.")
         self._folder_select = builder.get_object("folder_select")
         self._init_treeview(builder)
         self._init_basic_tab(builder)
         self._init_source_tab(builder)
-        builder.connect_signals(self)
-
-        for path in self.DESKTOP_ENTRY_DIRS:
-            if os.path.exists(path):
-                self.set_folder(path)
-                break
         
+        builder.connect_signals(self)
         self._desktop_file = None
     
     def _init_source_tab(self, builder):
@@ -136,30 +138,32 @@ class Application(object):
         self._type_combo.set_id_column(1)
         self._type_combo.set_active_id("Application")
     
-    def _load_treeview(self, path):
+    def _load_treeview(self):
         """
         Load the treeview with the .desktop entries found at path.
         """
-        logger.debug("Loading desktop entries from %s" % path)
+        self._treeview.set_sensitive(False)
         model = self._treeview.get_model()
         model.clear()
+        for path in xdg_data_dirs:
+            path = os.path.join(path, "applications")
+            logger.debug("Loading desktop entries from %s" % path)
+            for desktop_file in glob.glob(os.path.join(path, "*.desktop")):
+                try:
+                    entry = Entry(desktop_file)
+                except ParsingError, e:
+                    logger.warn(e)
+                    continue # skip entries with parse errors
+
+                pixbuf = entry.getIconPixbuf(16)
+
+                if entry.getGenericName():
+                    tooltip = entry.getGenericName()
+                else:
+                    tooltip = entry.getName()
+                model.append((pixbuf, entry.getName(), desktop_file, tooltip,))
+        self._treeview.set_sensitive(True)
         
-        for desktop_file in glob.glob(os.path.join(path, "*.desktop")):
-            logger.debug(desktop_file)
-            try:
-                entry = Entry(desktop_file)
-            except ParsingError, e:
-                logger.warn(e)
-                continue # skip entries with parse errors
-
-            pixbuf = entry.getIconPixbuf(16)
-
-            if entry.getGenericName():
-                tooltip = entry.getGenericName()
-            else:
-                tooltip = entry.getName()
-            model.append((pixbuf, entry.getName(), desktop_file, tooltip,))
-    
     def on_exec_entry_icon_press(self, entry, icon_pos, event, data=None):
         """
         Execute the command when the user presses the icon in the entry.
@@ -173,7 +177,7 @@ class Application(object):
         
     def on_folder_select_folder_changed(self, chooser, data=None):
         print "folder-changed"
-        self._load_treeview(chooser.get_filename())
+        #self._load_treeview(chooser.get_filename())
     
     def on_icon_entry_changed(self, entry, data=None):
         """
@@ -220,7 +224,18 @@ class Application(object):
         # if user needs to save...
             # return True
         return False
+  
+    def on_main_window_map_event(self, window, event, data=None):
+        #while Gtk.events_pending():
+        #    Gtk.main_iteration()
+        pass
+    
+    def on_main_window_show(self, window, data=None):
         
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+        self._load_treeview()
+        pass
         
     def on_treeview_selection_changed(self, selection, data=None):
         """
@@ -281,7 +296,7 @@ class Application(object):
         killing the window.
         """
         Gtk.main_quit()
-    
+        
     def run(self):
         """
         Show the main application window and enter GTK+ main loop.

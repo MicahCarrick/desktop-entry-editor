@@ -288,6 +288,10 @@ class Application(object):
         else:
             self._entry = old_entry
     
+    def on_type_combo_changed(self, combo, data=None):
+        type_str = combo.get_model()[combo.get_active()][0]
+        self._ui_value_changed("Type", type_str)
+        
     def on_exec_entry_changed(self, entry, data=None):
         self._ui_value_changed("Exec", entry.get_text())
         

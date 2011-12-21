@@ -370,6 +370,9 @@ class Application(object):
     
     def on_save_button_clicked(self, button, data=None):
         self.save_file(self._entry.filename)
+    
+    def on_terminal_button_toggled(self, button, data=None):
+        self._ui_value_changed("Terminal", button.get_active())
         
     def on_treeview_button_press_event(self, treeview, event, data=None):
         # if user needs to save...

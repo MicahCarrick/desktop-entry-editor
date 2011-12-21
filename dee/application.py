@@ -30,7 +30,29 @@ class Application(object):
     STATE_LOADING = 1    
     
     SOURCE_TAB = 2
+    ADVANCED_TAB = 1
     
+    ALL_KEYS = (
+        ('Type', 'This specification defines 3 types of desktop entries: Application (type 1), Link (type 2) and Directory (type 3). To allow the addition of new types in the future, implementations should ignore desktop entries with an unknown type.', str),
+        ('Version', 'Version of the Desktop Entry Specification that the desktop entry conforms with. Entries that confirm with this version of the specification should use 1.0. Note that the version field is not required to be present.', str),
+        ('Name', 'Specific name of the application, for example "Mozilla".', str),
+        ('GenericName', 'Generic name of the application, for example "Web Browser".', str),
+        ('NoDisplay', 'NoDisplay means "this application exists, but don\'t display it in the menus". This can be useful to e.g. associate this application with MIME types, so that it gets launched from a file manager (or other apps), without having a menu entry for it (there are tons of good reasons for this, including e.g. the netscape -remote, or kfmclient openURL kind of stuff).', bool),
+        ('Comment', 'Tooltip for the entry, for example "View sites on the Internet". The value should not be redundant with the values of Name and GenericName.', str),
+        ('Icon','Icon to display in file manager, menus, etc. If the name is an absolute path, the given file will be used. If the name is not an absolute path, the algorithm described in the Icon Theme Specification will be used to locate the icon.', str),
+        ('Hidden', 'Hidden should have been called Deleted. It means the user deleted (at his level) something that was present (at an upper level, e.g. in the system dirs). It\'s strictly equivalent to the .desktop file not existing at all, as far as that user is concerned. This can also be used to "uninstall" existing files (e.g. due to a renaming) - by letting make install install a file with Hidden=true in it.', bool),
+        ('OnlyShowIn','A list of strings identifying the environments that should display/not display a given desktop entry. Only one of these keys, either OnlyShowIn or NotShowIn, may appear in a group (for possible values see the Desktop Menu Specification).', str),
+        ('NotShowIn','A list of strings identifying the environments that should display/not display a given desktop entry. Only one of these keys, either OnlyShowIn or NotShowIn, may appear in a group (for possible values see the Desktop Menu Specification).', str),
+        ('TryExec','Path to an executable file on disk used to determine if the program is actually installed. If the path is not an absolute path, the file is looked up in the $PATH environment variable. If the file is not present or if it is not executable, the entry may be ignored (not be used in menus, for example).',str),
+        ('Exec','Program to execute, possibly with arguments.',str),
+        ('Path','If entry is of type Application, the working directory to run the program in.',str),
+        ('Terminal','Whether the program runs in a terminal window.',bool),
+        ('MimeType','The MIME type(s) supported by this application.',str),
+        ('Categories','Categories in which the entry should be shown in a menu (for possible values see the Desktop Menu Specification).',str),
+        ('StartupNotify','If true, it is KNOWN that the application will send a "remove" message when started with the DESKTOP_STARTUP_ID environment variable set. If false, it is KNOWN that the application does not work with startup notification at all (does not shown any window, breaks even when using StartupWMClass, etc.). If absent, a reasonable handling is up to implementations (assuming false, using StartupWMClass, etc.). (See the Startup Notification Protocol Specification for more details).',bool),
+        ('StartupWMClass','If specified, it is known that the application will map at least one window with the given string as its WM class or WM name hint (see the Startup Notification Protocol Specification for more details).',str),
+        ('URL','If entry is Link type, the URL to access.',str)
+    )
     def close_file(self):
         """
         Close the currently open desktop entry file.
@@ -104,6 +126,7 @@ class Application(object):
         self._init_settings()
         self._init_treeview(builder)
         self._init_basic_tab(builder)
+        self._init_advanced_tab(builder)
         self._init_source_tab(builder)
         
         # groups of widgets that share state (should have used GtkActions)
@@ -175,9 +198,34 @@ class Application(object):
         self._missing_pixbuf = self.window.render_icon_pixbuf(Gtk.STOCK_MISSING_IMAGE,
                                                               Gtk.IconSize.MENU)
     
+    def _init_advanced_tab(self, builder):
+        """
+        Initialize the advanced tab with a treeview of key/values.
+        """
+        self._advanced_treeview = builder.get_object("advanced_treeview")
+        treeview = self._advanced_treeview
+        model = Gtk.ListStore(GObject.TYPE_STRING,      # key
+                              GObject.TYPE_STRING,      # value (as string)
+                              GObject.TYPE_STRING)      # tooltip
+        model.set_sort_column_id(0, Gtk.SortType.ASCENDING)
+        treeview.set_model(model)
+        treeview.set_headers_visible(True)
+        
+        column = Gtk.TreeViewColumn("Key")
+        cell = Gtk.CellRendererText()
+        column.pack_start(cell, True)
+        column.add_attribute(cell, "text", 0)
+        treeview.append_column(column)
+        
+        column = Gtk.TreeViewColumn("Value")
+        cell = Gtk.CellRendererText()
+        column.pack_start(cell, True)
+        column.add_attribute(cell, "text", 1)
+        treeview.append_column(column)
+        
     def _init_basic_tab(self, builder):
         """
-        Initialize the combo box that holds the desktop entry type.
+        Initialize the the "Basic" tab with the minimum fields for a launcher.
         """
         self._type_combo = builder.get_object("type_combo")
         self._name_entry = builder.get_object("name_entry")
@@ -402,6 +450,8 @@ class Application(object):
         index = self._notebook.get_current_page()
         if index == self.SOURCE_TAB:
             self._update_source_tab()
+        elif index == self.ADVANCED_TAB:
+            self._update_advanced_tab()
         
         
     def on_treeview_selection_changed(self, selection, data=None):
@@ -499,6 +549,19 @@ class Application(object):
             return # do not continue if we're loading UI
             
         self._entry.set(key, value)
+    
+    def _update_advanced_tab(self):
+        """
+        Update the advanced tab based on the current state of the Entry.        
+        """
+        model = self._advanced_treeview.get_model()
+        model.clear()
+        for key, tooltip, t in self.ALL_KEYS:
+            try:
+                value = self._entry.get(key)
+            except:
+                value = None
+            model.append((key, value, tooltip,))
         
     def _update_source_tab(self):
         """

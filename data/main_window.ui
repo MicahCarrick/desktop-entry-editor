@@ -238,6 +238,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="vexpand">True</property>
+                    <signal name="switch-page" handler="on_notebook_switch_page" swapped="no"/>
                     <child>
                       <object class="GtkGrid" id="grid1">
                         <property name="visible">True</property>

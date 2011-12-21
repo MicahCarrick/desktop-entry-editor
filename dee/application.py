@@ -4,6 +4,7 @@ import sys
 import logging
 import subprocess
 import shlex
+import tempfile
 from gi.repository import GObject, Gio, Gdk, GdkPixbuf, Gtk, Pango
 from gi.repository import GtkSource
 from dee.entry import Entry
@@ -27,6 +28,8 @@ class Application(object):
     
     STATE_NORMAL = 0
     STATE_LOADING = 1    
+    
+    SOURCE_TAB = 2
     
     def close_file(self):
         """
@@ -230,13 +233,7 @@ class Application(object):
         # populate advanced tab
 
         # load file into source view
-        if entry.filename:
-            self._sourceview.set_editable(False)
-            buffer = self._sourceview.get_buffer()
-            with open(entry.filename, 'r') as f:
-                buffer.set_text(f.read())
-            f.closed
-            self._sourceview.set_editable(True)
+        self._update_source_tab()
             
         [widget.set_sensitive(True) for widget in self._open_file_widgets]
         self._state = self.STATE_NORMAL
@@ -331,7 +328,8 @@ class Application(object):
         if self._state == self.STATE_NORMAL:
             self.set_modified(True)
         icon = entry.get_text()
-        self._entry.set("Icon", icon)
+        if icon:
+            self._entry.set("Icon", icon)
         icon_theme = Gtk.IconTheme.get_default()
         if os.path.exists(icon):
             pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(icon, 16, 16)
@@ -383,6 +381,12 @@ class Application(object):
             Gtk.main_iteration()
         self._load_treeview()
         pass
+    
+    def on_notebook_switch_page(self, notebook, page, data=None):
+        index = self._notebook.get_current_page()
+        if index == self.SOURCE_TAB:
+            self._update_source_tab()
+        
         
     def on_treeview_selection_changed(self, selection, data=None):
         """
@@ -469,6 +473,31 @@ class Application(object):
         self._entry.is_modified = modified
         self._update_ui()
         
+    def _update_source_tab(self):
+        """
+        Update the source tab with the contents of what the .desktop file would
+        look like based on the current, possibly unsaved entry.
+        """
+        # temporarily change entry filename to a temp file to write it's output
+        entry = self._entry
+        original_filename = self._entry.filename
+        (fd, filename) = tempfile.mkstemp(suffix=".desktop")
+        entry.write(filename)
+
+        # load temp file into sourceview
+        self._sourceview.set_editable(False)
+        buffer = self._sourceview.get_buffer()
+        with open(entry.filename, 'r') as f:
+            buffer.set_text(f.read())
+        f.closed
+        self._sourceview.set_editable(True)
+        
+        # clean up
+        if fd:
+            os.close(fd)
+        if filename:
+            os.remove(filename)
+        entry.filename = original_filename
         
     def _update_ui(self):
         """

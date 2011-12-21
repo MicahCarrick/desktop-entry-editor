@@ -287,7 +287,10 @@ class Application(object):
             self.save_file(filename)
         else:
             self._entry = old_entry
-     
+    
+    def on_exec_entry_changed(self, entry, data=None):
+        self._ui_value_changed("Exec", entry.get_text())
+        
     def on_exec_entry_icon_press(self, entry, icon_pos, event, data=None):
         """
         Execute the command when the user presses the icon in the entry.
@@ -364,6 +367,9 @@ class Application(object):
             if image:
                 image.set_from_pixbuf(self._entry.getIconPixbuf(size))
         dialog.show()
+    
+    def on_save_button_clicked(self, button, data=None):
+        self.save_file(self._entry.filename)
         
     def on_treeview_button_press_event(self, treeview, event, data=None):
         # if user needs to save...

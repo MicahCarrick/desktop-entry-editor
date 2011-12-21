@@ -331,6 +331,7 @@ class Application(object):
         if self._state == self.STATE_NORMAL:
             self.set_modified(True)
         icon = entry.get_text()
+        self._entry.set("Icon", icon)
         icon_theme = Gtk.IconTheme.get_default()
         if os.path.exists(icon):
             pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(icon, 16, 16)

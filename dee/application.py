@@ -287,7 +287,7 @@ class Application(object):
             self.save_file(filename)
         else:
             self._entry = old_entry
-        
+     
     def on_exec_entry_icon_press(self, entry, icon_pos, event, data=None):
         """
         Execute the command when the user presses the icon in the entry.
@@ -327,11 +327,9 @@ class Application(object):
         """
         Update the primary icon as the user enters text.
         """
-        if self._state == self.STATE_NORMAL:
-            self.set_modified(True)
         icon = entry.get_text()
-        if icon:
-            self._entry.set("Icon", icon)
+        self._ui_value_changed("Icon", icon)
+
         icon_theme = Gtk.IconTheme.get_default()
         if os.path.exists(icon):
             pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(icon, 16, 16)
@@ -384,6 +382,9 @@ class Application(object):
         self._load_treeview()
         pass
     
+    def on_name_entry_changed(self, entry, data=None):
+        self._ui_value_changed("Name", entry.get_text())
+            
     def on_notebook_switch_page(self, notebook, page, data=None):
         index = self._notebook.get_current_page()
         if index == self.SOURCE_TAB:
@@ -398,7 +399,7 @@ class Application(object):
         if model and iter:
             self.close_file()
             self.open_file(model.get_value(iter, 2))
-    
+     
     def open_file(self, desktop_file):
         """
         Open the specified desktop file.
@@ -474,6 +475,17 @@ class Application(object):
         """
         self._entry.is_modified = modified
         self._update_ui()
+    
+    def _ui_value_changed(self, key, value):
+        """
+        Generic method to handle user changes to the Entry via the GUI.
+        """
+        if self._state == self.STATE_NORMAL:
+            self.set_modified(True)
+        else:
+            return # do not continue if we're loading UI
+            
+        self._entry.set(key, value)
         
     def _update_source_tab(self):
         """

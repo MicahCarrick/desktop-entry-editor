@@ -296,6 +296,7 @@
                             <property name="can_focus">True</property>
                             <property name="invisible_char">●</property>
                             <property name="invisible_char_set">True</property>
+                            <signal name="changed" handler="on_name_entry_changed" swapped="no"/>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
@@ -387,7 +388,6 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="hexpand">True</property>
-                                <property name="has_frame">False</property>
                                 <property name="invisible_char">●</property>
                                 <property name="invisible_char_set">True</property>
                                 <property name="primary_icon_stock">gtk-execute</property>

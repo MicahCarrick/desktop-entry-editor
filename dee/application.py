@@ -303,7 +303,10 @@ class Application(object):
     
     def on_file_new_activate(self, menuitem, data=None):
         self.new_file()
-        
+    
+    def on_file_save_activate(self, menuitem, data=None):
+        self.save_file(self._entry.filename)
+    
     def on_help_about_activate(self, menuitem, data=None):
         """
         Show the about dialog.
@@ -319,8 +322,7 @@ class Application(object):
         dialog.set_comments(APP_DESCRIPTION)
         dialog.run()
         dialog.destroy()
-        
-        
+
     def on_icon_entry_changed(self, entry, data=None):
         """
         Update the primary icon as the user enters text.
@@ -462,8 +464,8 @@ class Application(object):
         
     def save_file(self, filename):
         self._entry.write(filename)
-        #self._entry.parse(filename)
         self._load_treeview()
+        self.set_modified(False)
         self._load_desktop_entry_ui()
         
     def set_modified(self, modified=True):

@@ -465,8 +465,9 @@ class Application(object):
         self.new_file()
     
     def on_file_open_activate(self, action, data=None):
-        # TODO
-        pass
+        filename = self.open_dialog()
+        if filename:
+            self.open_file(filename)
         
     def on_file_save_activate(self, action, data=None):
         self.save_file(self._entry.filename)
@@ -606,6 +607,31 @@ class Application(object):
     def on_view_toolbar_toggled(self, action, data=None):
         # TODO
         pass
+    
+    def open_dialog(self):
+        """
+        Return a user-selected save filename or None if the user cancels.
+        """
+        filename = None
+        chooser = Gtk.FileChooserDialog("Open File...", self.window,
+                                        Gtk.FileChooserAction.OPEN,
+                                        (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, 
+                                         Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
+        for path in xdg_data_dirs:
+            path = os.path.join(path, "applications")
+            if os.path.exists(path) and os.access(path, os.W_OK):
+                chooser.set_current_folder(path)
+                break
+        filter = Gtk.FileFilter()
+        filter.add_pattern("*.desktop")  
+        filter.add_pattern("*.directory")
+        chooser.set_filter(filter)
+        
+        response = chooser.run()
+        if response == Gtk.ResponseType.OK: 
+            filename = chooser.get_filename()
+        chooser.destroy()
+        return filename
         
     def open_file(self, desktop_file):
         """

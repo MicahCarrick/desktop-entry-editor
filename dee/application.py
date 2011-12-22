@@ -3,7 +3,6 @@ import glob
 import sys
 import logging
 import subprocess
-import shlex
 import tempfile
 from gi.repository import GObject, Gio, Gdk, GdkPixbuf, Gtk, Pango
 from gi.repository import GtkSource
@@ -13,10 +12,9 @@ from xdg.DesktopEntry import  ParsingError, ValidationError
 from xdg.BaseDirectory import xdg_data_dirs
 
 APP_NAME = "Desktop Entry Editor"
-APP_DESCRIPTION = "A desktop entry (application launcher) editor\nbased on the freedesktop.org specifications."
+APP_DESCRIPTION = "A Desktop Entry editor based on \nthe freedesktop.org specifications."
 APP_VERSION = "0.1"
 DATA_DIR = "data"
-# XDG_DATA_DIR
 SETTINGS_SCHEMA = "apps.desktop-entry-editor"
 
 logging.basicConfig()
@@ -135,7 +133,7 @@ class Application(object):
         
         # groups of widgets that share state (should have used GtkActions)
         self._save_widgets = (
-            builder.get_object("save_button"),
+            #builder.get_object("save_button"),
             builder.get_object("save_menuitem")
         )
         self._open_file_widgets= (

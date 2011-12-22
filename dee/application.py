@@ -32,6 +32,7 @@ class Application(object):
     SOURCE_TAB = 2
     ADVANCED_TAB = 1
     
+    # http://standards.freedesktop.org/desktop-entry-spec/latest/ar01s05.html
     ALL_KEYS = (
         ('Type', 'This specification defines 3 types of desktop entries: Application (type 1), Link (type 2) and Directory (type 3). To allow the addition of new types in the future, implementations should ignore desktop entries with an unknown type.', str),
         ('Version', 'Version of the Desktop Entry Specification that the desktop entry conforms with. Entries that confirm with this version of the specification should use 1.0. Note that the version field is not required to be present.', str),
@@ -53,6 +54,7 @@ class Application(object):
         ('StartupWMClass','If specified, it is known that the application will map at least one window with the given string as its WM class or WM name hint (see the Startup Notification Protocol Specification for more details).',str),
         ('URL','If entry is Link type, the URL to access.',str)
     )
+    
     def close_file(self):
         """
         Close the currently open desktop entry file.
@@ -124,6 +126,8 @@ class Application(object):
         self._statusbar = builder.get_object("statusbar")
         self._statusbar_ctx = self._statusbar.get_context_id("Selected entry.")
         self._init_settings()
+        menu_item = builder.get_object("view_read_only_menuitem")
+        menu_item.set_active(self._settings.get_boolean("show-read-only-files"))
         self._init_treeview(builder)
         self._init_basic_tab(builder)
         self._init_advanced_tab(builder)
@@ -138,6 +142,20 @@ class Application(object):
             builder.get_object("close_menuitem"),
             builder.get_object("save_as_menuitem"),
             self._notebook,
+        )
+        self._type_application_widgets = (
+            builder.get_object("terminal_label"),
+            builder.get_object("terminal_checkbutton"),
+            builder.get_object("exec_label"),
+            builder.get_object("exec_entry"),
+            builder.get_object("exec_open_button"),
+        )
+        self._type_directory_widgets = (
+        
+        )
+        self._type_link_widgets = (
+            builder.get_object("url_label"),
+            builder.get_object("url_entry"),
         )
         
         builder.connect_signals(self)
@@ -231,6 +249,7 @@ class Application(object):
         self._name_entry = builder.get_object("name_entry")
         self._icon_entry = builder.get_object("icon_entry")
         self._exec_entry = builder.get_object("exec_entry")
+        self._url_entry = builder.get_object("url_entry")
         self._terminal_checkbutton = builder.get_object("terminal_checkbutton")
         
         # populate type combo box
@@ -238,7 +257,7 @@ class Application(object):
         model.append(("Application",))
         model.append(("Directory",))
         model.append(("Link",))
-
+        
         cell = Gtk.CellRendererText()
         self._type_combo.pack_start(cell, True)
         self._type_combo.add_attribute(cell, "text", 0)
@@ -256,7 +275,7 @@ class Application(object):
         self._update_ui()
         if not entry:
             # clear all
-            self._statusbar.pop(self._statusbar_ctx)
+            self._status_pop()
             self._sourceview.get_buffer().set_text("")
             self._type_combo.set_active_id("Application")
             self._name_entry.set_text("")
@@ -268,16 +287,12 @@ class Application(object):
             return
             
         # statusbar
-        self._statusbar.pop(self._statusbar_ctx)
-        self._statusbar.push(self._statusbar_ctx, entry.filename)
+        self._status_push(entry.filename)
+        
 
         # populate basic tab
-        self._type_combo.set_active_id(entry.getType())
-        self._name_entry.set_text(entry.getName())
-        self._icon_entry.set_text(entry.getIcon())
-        self._exec_entry.set_text(entry.getExec())
-        self._terminal_checkbutton.set_active(entry.getTerminal())
-
+        self._update_basic_tab()
+        
         # populate advanced tab
 
         # load file into source view
@@ -290,9 +305,14 @@ class Application(object):
         """
         Load the treeview with the .desktop entries found at path.
         """
-        self._treeview.set_sensitive(False)
+        
+        self._treeview.get_bin_window().set_cursor(Gdk.Cursor(Gdk.CursorType.WATCH))
+        self._status_push("Loading...")
+        
         model = self._treeview.get_model()
         model.clear()
+        #
+        show_ro = self._settings.get_boolean('show-read-only-files')
         for path in xdg_data_dirs:
             path = os.path.join(path, "applications")
             logger.debug("Loading desktop entries from %s" % path)
@@ -311,7 +331,7 @@ class Application(object):
                     tooltip = entry.getName()
                 
                 if entry.isReadOnly():
-                    if self._settings.get_boolean('show-read-only-files'):
+                    if show_ro:
                         markup = "<span color='#888888'>%s</span>" % entry.getName()
                     else:
                         continue # skip read-only per settings
@@ -319,8 +339,9 @@ class Application(object):
                     markup = entry.getName()
                 
                 model.append((pixbuf, entry.getName(), desktop_file, tooltip, markup,))
-        self._treeview.set_sensitive(True)
-    
+        self._treeview.get_bin_window().set_cursor(None)
+        self._status_pop()
+        
     def new_file(self):
         """
         Create a new, empty desktop entry.
@@ -329,16 +350,19 @@ class Application(object):
         self._entry = Entry()
         filename = self.save_dialog()
         if filename:
+            #TODO make sure filename is .desktop or .directory
             self._entry.new(filename)
             self._entry.set("Name", "Untitled")
             logger.debug(self._entry.getName())
             self.save_file(filename)
-        else:
-            self._entry = old_entry
+            return
+        self._entry = old_entry
     
     def on_type_combo_changed(self, combo, data=None):
         type_str = combo.get_model()[combo.get_active()][0]
         self._ui_value_changed("Type", type_str)
+        if self._entry:
+            self._update_basic_tab()
         
     def on_exec_entry_changed(self, entry, data=None):
         self._ui_value_changed("Exec", entry.get_text())
@@ -362,6 +386,11 @@ class Application(object):
     def on_file_save_activate(self, menuitem, data=None):
         self.save_file(self._entry.filename)
     
+    def on_file_save_as_activate(self, menuitem, data=None):
+        filename = self.save_dialog()
+        if filename:
+            self.save_file(filename)
+        
     def on_help_about_activate(self, menuitem, data=None):
         """
         Show the about dialog.
@@ -437,9 +466,6 @@ class Application(object):
         pass
     
     def on_main_window_show(self, window, data=None):
-        
-        while Gtk.events_pending():
-            Gtk.main_iteration()
         self._load_treeview()
         pass
     
@@ -452,8 +478,9 @@ class Application(object):
             self._update_source_tab()
         elif index == self.ADVANCED_TAB:
             self._update_advanced_tab()
-        
-        
+        else:
+            self._udpate_basic_tab()
+
     def on_treeview_selection_changed(self, selection, data=None):
         """
         Change the currently selected desktop entry.
@@ -462,7 +489,19 @@ class Application(object):
         if model and iter:
             self.close_file()
             self.open_file(model.get_value(iter, 2))
-     
+    
+    def on_url_entry_changed(self, entry, data=None):
+        self._ui_value_changed("URL", entry.get_text())
+    
+    def on_url_entry_icon_press(self, entry, icon_pos, event, data=None):
+        if not self._entry:
+            return
+        subprocess.call(["xdg-open", self._entry.getURL()])
+        
+    def on_view_read_only_toggled(self, menuitem, data=None):
+        self._settings.set_boolean("show-read-only-files",
+                                    menuitem.get_active())
+    
     def open_file(self, desktop_file):
         """
         Open the specified desktop file.
@@ -539,6 +578,20 @@ class Application(object):
         self._entry.is_modified = modified
         self._update_ui()
     
+    def _status_pop(self):
+        """
+        Pop the last status message off the statusbar.
+        """
+        self._statusbar.pop(self._statusbar_ctx)
+        
+    def _status_push(self, status):
+        """
+        Push a status message into the statusbar and ensure it is shown.
+        """
+        self._statusbar.push(self._statusbar_ctx, status)
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+    
     def _ui_value_changed(self, key, value):
         """
         Generic method to handle user changes to the Entry via the GUI.
@@ -562,7 +615,33 @@ class Application(object):
             except:
                 value = None
             model.append((key, value, tooltip,))
+    
+    def _update_basic_tab(self):
+        """
+        Update the basic tab based on the current state of the Entry.        
+        """
+        entry = self._entry
         
+        # hide widgets based on type
+        [widget.set_visible(False) for widget in self._type_link_widgets]
+        [widget.set_visible(False) for widget in self._type_directory_widgets]
+        [widget.set_visible(False) for widget in self._type_application_widgets]
+        entry_type = entry.getType()
+        if entry_type == "Directory":
+            [widget.set_visible(True) for widget in self._type_directory_widgets]
+        elif entry_type == "Link":
+            [widget.set_visible(True) for widget in self._type_link_widgets]
+        else:
+            [widget.set_visible(True) for widget in self._type_application_widgets]
+            
+        self._type_combo.set_active_id(entry.getType())
+        self._name_entry.set_text(entry.getName())
+        self._icon_entry.set_text(entry.getIcon())
+        self._exec_entry.set_text(entry.getExec())
+        self._terminal_checkbutton.set_active(entry.getTerminal())
+        self._url_entry.set_text(entry.getURL())
+
+            
     def _update_source_tab(self):
         """
         Update the source tab with the contents of what the .desktop file would

@@ -78,6 +78,7 @@
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
                         <accelerator key="s" signal="activate" modifiers="GDK_SHIFT_MASK | GDK_CONTROL_MASK"/>
+                        <signal name="activate" handler="on_file_save_as_activate" swapped="no"/>
                       </object>
                     </child>
                     <child>
@@ -122,24 +123,24 @@
               </object>
             </child>
             <child>
-              <object class="GtkMenuItem" id="menuitem6">
+              <object class="GtkMenuItem" id="menuitem9">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="use_action_appearance">False</property>
-                <property name="label" translatable="yes">_Edit</property>
+                <property name="label" translatable="yes">_View</property>
                 <property name="use_underline">True</property>
                 <child type="submenu">
-                  <object class="GtkMenu" id="menu2">
+                  <object class="GtkMenu" id="menu4">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <child>
-                      <object class="GtkImageMenuItem" id="menuitem7">
-                        <property name="label">gtk-preferences</property>
+                      <object class="GtkCheckMenuItem" id="view_read_only_menuitem">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="use_action_appearance">False</property>
+                        <property name="label" translatable="yes">_Show read-only files in list</property>
                         <property name="use_underline">True</property>
-                        <property name="use_stock">True</property>
+                        <signal name="toggled" handler="on_view_read_only_toggled" swapped="no"/>
                       </object>
                     </child>
                   </object>
@@ -247,7 +248,7 @@
                         <property name="border_width">12</property>
                         <property name="row_spacing">12</property>
                         <property name="column_spacing">12</property>
-                        <property name="n_rows">5</property>
+                        <property name="n_rows">6</property>
                         <property name="n_columns">2</property>
                         <child>
                           <object class="GtkLabel" id="label4">
@@ -366,7 +367,7 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkLabel" id="label8">
+                          <object class="GtkLabel" id="exec_label">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="xalign">0</property>
@@ -380,7 +381,7 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkBox" id="box5">
+                          <object class="GtkBox" id="exec_box">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="spacing">6</property>
@@ -402,7 +403,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkButton" id="button3">
+                              <object class="GtkButton" id="exec_open_button">
                                 <property name="label">gtk-open</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
@@ -425,20 +426,6 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkLabel" id="label3">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="xalign">0</property>
-                            <property name="label" translatable="yes"> </property>
-                          </object>
-                          <packing>
-                            <property name="left_attach">0</property>
-                            <property name="top_attach">4</property>
-                            <property name="width">1</property>
-                            <property name="height">1</property>
-                          </packing>
-                        </child>
-                        <child>
                           <object class="GtkCheckButton" id="terminal_checkbutton">
                             <property name="label" translatable="yes">Run in _terminal</property>
                             <property name="visible">True</property>
@@ -449,6 +436,50 @@
                             <property name="xalign">0</property>
                             <property name="draw_indicator">True</property>
                             <signal name="toggled" handler="on_terminal_button_toggled" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="left_attach">1</property>
+                            <property name="top_attach">5</property>
+                            <property name="width">1</property>
+                            <property name="height">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="terminal_label">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="xalign">0</property>
+                            <property name="label" translatable="yes"> </property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">0</property>
+                            <property name="top_attach">5</property>
+                            <property name="width">1</property>
+                            <property name="height">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="url_label">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="xalign">0</property>
+                            <property name="label" translatable="yes">URL</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">0</property>
+                            <property name="top_attach">4</property>
+                            <property name="width">1</property>
+                            <property name="height">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkEntry" id="url_entry">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="invisible_char">●</property>
+                            <property name="primary_icon_name">html</property>
+                            <signal name="changed" handler="on_url_entry_changed" swapped="no"/>
+                            <signal name="icon-press" handler="on_url_entry_icon_press" swapped="no"/>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
@@ -484,8 +515,10 @@
                             <property name="rules_hint">True</property>
                             <property name="search_column">0</property>
                             <property name="enable_grid_lines">vertical</property>
-                            <property name="enable_tree_lines">True</property>
                             <property name="tooltip_column">2</property>
+                            <child internal-child="selection">
+                              <object class="GtkTreeSelection" id="treeview-selection2"/>
+                            </child>
                           </object>
                         </child>
                       </object>

@@ -186,6 +186,8 @@ class Application(object):
         language = manager.get_language("ini")
         buffer.set_language(language)
         scrolled_window.show_all()
+        # temporary until code for editing source is fixed
+        self._sourceview.set_editable(False)
         
         
     def _init_treeview(self, builder):
@@ -237,6 +239,8 @@ class Application(object):
         
         column = Gtk.TreeViewColumn("Value")
         cell = Gtk.CellRendererText()
+        cell.set_property("editable", True)
+        cell.connect("edited", self.on_advanced_treeview_edited, treeview)
         column.pack_start(cell, True)
         column.add_attribute(cell, "text", 1)
         treeview.append_column(column)
@@ -358,6 +362,15 @@ class Application(object):
             return
         self._entry = old_entry
     
+    def on_advanced_treeview_edited(self, cell, path, new_text, treeview):
+        """
+        Update the treeview and the entry when the treeview values are edited.
+        """
+        model = treeview.get_model()
+        key = model[path][0]
+        model[path][1] = new_text
+        self._ui_value_changed(key, new_text)
+        
     def on_type_combo_changed(self, combo, data=None):
         type_str = combo.get_model()[combo.get_active()][0]
         self._ui_value_changed("Type", type_str)
@@ -479,7 +492,7 @@ class Application(object):
         elif index == self.ADVANCED_TAB:
             self._update_advanced_tab()
         else:
-            self._udpate_basic_tab()
+            self._update_basic_tab()
 
     def on_treeview_selection_changed(self, selection, data=None):
         """
@@ -654,12 +667,12 @@ class Application(object):
         entry.write(filename)
 
         # load temp file into sourceview
-        self._sourceview.set_editable(False)
+        #self._sourceview.set_editable(False)
         buffer = self._sourceview.get_buffer()
         with open(entry.filename, 'r') as f:
             buffer.set_text(f.read())
         f.closed
-        self._sourceview.set_editable(True)
+        #self._sourceview.set_editable(True)
         
         # clean up
         if fd:

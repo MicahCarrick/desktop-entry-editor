@@ -124,23 +124,12 @@ class Application(object):
         self._statusbar = builder.get_object("statusbar")
         self._statusbar_ctx = self._statusbar.get_context_id("Selected entry.")
         self._init_settings()
-        menu_item = builder.get_object("view_read_only_menuitem")
-        menu_item.set_active(self._settings.get_boolean("show-read-only-files"))
+        self._init_menu_and_toolbar(builder)
         self._init_treeview(builder)
         self._init_basic_tab(builder)
         self._init_advanced_tab(builder)
         self._init_source_tab(builder)
         
-        # groups of widgets that share state (should have used GtkActions)
-        self._save_widgets = (
-            #builder.get_object("save_button"),
-            builder.get_object("save_menuitem")
-        )
-        self._open_file_widgets= (
-            builder.get_object("close_menuitem"),
-            builder.get_object("save_as_menuitem"),
-            self._notebook,
-        )
         self._type_application_widgets = (
             builder.get_object("terminal_label"),
             builder.get_object("terminal_checkbutton"),
@@ -268,6 +257,72 @@ class Application(object):
         self._type_combo.set_id_column(0)
         self._type_combo.set_active_id("Application")
     
+    def _init_menu_and_toolbar(self, builder):
+        """
+        Load the menu and toolbar from the UI definitions file.
+        """
+        manager = Gtk.UIManager()
+        accelgroup = manager.get_accel_group()
+        self.window.add_accel_group(accelgroup)
+        
+        # global actions are always sensitive
+        self._app_actions = Gtk.ActionGroup("AppActions")
+        self._app_actions.add_actions([
+            ('File', None, '_File', None, None, None),
+            ('View', None, '_View', None, None, None),
+            ('Help', None, '_Help', None, None, None),
+            ('New', Gtk.STOCK_NEW, None, None, None, 
+                self.on_file_new_activate),
+            ('Open', Gtk.STOCK_OPEN, None, None, None, 
+                self.on_file_open_activate),
+            ('Quit', Gtk.STOCK_QUIT, None, None, None, 
+                self.quit),
+            ('Refresh', Gtk.STOCK_REFRESH, None, None, None, 
+                self.on_view_refresh_activate),
+            ('About', Gtk.STOCK_ABOUT, None, None, None, 
+                self.on_help_about_activate),
+        ])
+        self._app_actions.add_toggle_actions([
+            ('ViewReadOnly', None, "Show _read-only files", None, None, 
+                self.on_view_read_only_toggled, 
+                self._settings.get_boolean("show-read-only-files")),
+            ('ViewToolbar', None, "_Toolbar", None, None, 
+                self.on_view_toolbar_toggled, False),
+        ])
+           
+        self._save_actions = Gtk.ActionGroup("SaveActions")
+        self._save_actions.add_actions([
+            ('Save', Gtk.STOCK_SAVE, None, None, None,
+                self.on_file_save_activate),
+        ])
+        self._save_actions.set_sensitive(False)
+        
+        self._open_actions = Gtk.ActionGroup("OpenActions")
+        self._open_actions.add_actions([
+            ('SaveAs', Gtk.STOCK_SAVE_AS, None, None, None,
+                self.on_file_save_as_activate),
+            ('Close', Gtk.STOCK_CLOSE, None, None, None,
+                self.on_file_close_activate),
+        ])
+        
+        manager.insert_action_group(self._app_actions)
+        manager.insert_action_group(self._save_actions)
+        manager.insert_action_group(self._open_actions)
+        
+        ui_file = os.path.join(DATA_DIR, 'menu_toolbar.ui')
+        manager.add_ui_from_file(ui_file)
+        menu = manager.get_widget('ui/MenuBar')
+        toolbar = manager.get_widget('ui/MainToolbar')
+        
+        self._ui_manager = manager
+        
+        # pack into main interface box
+        box = builder.get_object("main_box")
+        box.pack_start(toolbar, False, True, 0)
+        box.pack_start(menu, False, True, 0)
+        box.reorder_child(menu, 0)
+        box.reorder_child(toolbar, 1)
+        
     def _load_desktop_entry_ui(self):
         """
         Load the current Entry into the various widgets of the GUI.
@@ -284,7 +339,8 @@ class Application(object):
             self._icon_entry.set_text("")
             self._exec_entry.set_text("")
             self._terminal_checkbutton.set_active(False)
-            [widget.set_sensitive(False) for widget in self._open_file_widgets]
+            self._open_actions.set_sensitive(False)
+            self._notebook.set_sensitive(False)
             self._state = self.STATE_NORMAL
             return
             
@@ -300,7 +356,8 @@ class Application(object):
         # load file into source view
         self._update_source_tab()
             
-        [widget.set_sensitive(True) for widget in self._open_file_widgets]
+        self._open_actions.set_sensitive(True)
+        self._notebook.set_sensitive(True)
         self._state = self.STATE_NORMAL
         
     def _load_treeview(self):
@@ -388,21 +445,25 @@ class Application(object):
         retval = subprocess.call(self._entry.getExec(), shell=True)
         logger.debug("Exited with code " + str(retval))
     
-    def on_file_close_activate(self, menuitem, data=None):
+    def on_file_close_activate(self, action, data=None):
         self.close_file()
     
-    def on_file_new_activate(self, menuitem, data=None):
+    def on_file_new_activate(self, action, data=None):
         self.new_file()
     
-    def on_file_save_activate(self, menuitem, data=None):
+    def on_file_open_activate(self, action, data=None):
+        # TODO
+        pass
+        
+    def on_file_save_activate(self, action, data=None):
         self.save_file(self._entry.filename)
     
-    def on_file_save_as_activate(self, menuitem, data=None):
+    def on_file_save_as_activate(self, action, data=None):
         filename = self.save_dialog()
         if filename:
             self.save_file(filename)
         
-    def on_help_about_activate(self, menuitem, data=None):
+    def on_help_about_activate(self, action, data=None):
         """
         Show the about dialog.
         """
@@ -509,10 +570,17 @@ class Application(object):
             return
         subprocess.call(["xdg-open", self._entry.getURL()])
         
-    def on_view_read_only_toggled(self, menuitem, data=None):
+    def on_view_read_only_toggled(self, action, data=None):
         self._settings.set_boolean("show-read-only-files",
-                                    menuitem.get_active())
+                                    action.get_active())
     
+    def on_view_refresh_activate(self, action, data=None):
+        self._load_treeview()
+                                    
+    def on_view_toolbar_toggled(self, action, data=None):
+        # TODO
+        pass
+        
     def open_file(self, desktop_file):
         """
         Open the specified desktop file.
@@ -700,7 +768,7 @@ class Application(object):
                                                     APP_NAME))
         # save buttons 
         if entry and entry.isModified() and not entry.isReadOnly():
-            [widget.set_sensitive(True) for widget in self._save_widgets]
+            self._save_actions.set_sensitive(True)
         else:
-            [widget.set_sensitive(False) for widget in self._save_widgets]
+            self._save_actions.set_sensitive(False)
          

@@ -7,8 +7,7 @@ import tempfile
 from gi.repository import GObject, Gio, Gdk, GdkPixbuf, Gtk, Pango
 from gi.repository import GtkSource
 from dee.entry import Entry
-from xdg.DesktopEntry import  ParsingError, ValidationError
-
+from xdg.Exceptions import  ParsingError, ValidationError
 from xdg.BaseDirectory import xdg_data_dirs
 
 APP_NAME = "Desktop Entry Editor"
@@ -106,6 +105,17 @@ class Application(object):
         else:
             pixbuf = GdkPixbuf.Pixbuf.new_from_file(pixbuf_file)
         return pixbuf
+    
+    def info_dialog(self, message, title="Information"):
+        """ Display a very basic info dialog. """
+        dialog = Gtk.MessageDialog(self.window,
+                                   Gtk.DialogFlags.MODAL | 
+                                   Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                                   Gtk.MessageType.INFO, Gtk.ButtonsType.OK, 
+                                   message)
+        dialog.set_title(title)
+        dialog.run()
+        dialog.destroy()
         
     def __init__(self):
         """
@@ -270,6 +280,7 @@ class Application(object):
         self._app_actions.add_actions([
             ('File', None, '_File', None, None, None),
             ('View', None, '_View', None, None, None),
+            ('Tools', None, '_Tools', None, None, None),
             ('Help', None, '_Help', None, None, None),
             ('New', Gtk.STOCK_NEW, None, None, None, 
                 self.on_file_new_activate),
@@ -303,6 +314,8 @@ class Application(object):
                 self.on_file_save_as_activate),
             ('Close', Gtk.STOCK_CLOSE, None, None, None,
                 self.on_file_close_activate),
+            ('Validate', None, "Validate", None, None,
+                self.on_tools_validate_activate),
         ])
         
         manager.insert_action_group(self._app_actions)
@@ -525,8 +538,21 @@ class Application(object):
         self.save_file(self._entry.filename)
     
     def on_terminal_button_toggled(self, button, data=None):
-        self._ui_value_changed("Terminal", button.get_active())
-        
+        self._ui_value_changed("Terminal", str(button.get_active()).lower())
+    
+    def on_tools_validate_activate(self, action, data=None):
+        """
+        Run the validate() method on the entry and show the results in a Gtk
+        dialog.
+        """
+        try:
+            self._entry.validate()
+        except ValidationError, e:
+            self.error_dialog(e)
+            return
+        self.info_dialog("%s is valid." % os.path.basename(self._entry.filename),
+                         "Validation")
+                
     def on_treeview_button_press_event(self, treeview, event, data=None):
         # if user needs to save...
             # return True
@@ -645,6 +671,7 @@ class Application(object):
         return filename
         
     def save_file(self, filename):
+        # TODO confirm user wants to save if the file is invalid         
         self._entry.write(filename)
         self._load_treeview()
         self.set_modified(False)
@@ -690,7 +717,7 @@ class Application(object):
         model.clear()
         for key, tooltip, t in self.ALL_KEYS:
             try:
-                value = self._entry.get(key)
+                value = str(self._entry.get(key))
             except:
                 value = None
             model.append((key, value, tooltip,))
@@ -771,4 +798,3 @@ class Application(object):
             self._save_actions.set_sensitive(True)
         else:
             self._save_actions.set_sensitive(False)
-         

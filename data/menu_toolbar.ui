@@ -17,6 +17,9 @@
       <separator/>
       <menuitem action="Refresh"/>
     </menu>
+    <menu action="Tools">
+        <menuitem action="Validate"/>
+    </menu>
     <menu action="Help">
       <menuitem action="About"/>
     </menu>

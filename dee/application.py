@@ -706,8 +706,11 @@ class Application(object):
             self.set_modified(True)
         else:
             return # do not continue if we're loading UI
-            
-        self._entry.set(key, value)
+        
+        if not value:
+            self._entry.removeKey(key)
+        else:
+            self._entry.set(key, value)
     
     def _update_advanced_tab(self):
         """

@@ -24,10 +24,6 @@ logger.setLevel(LOG_LEVEL)
 
 class Application(object):
     
-    DATA_DIR = ""
-    PACKAGE = ""
-    VERSION = ""
-    
     STATE_NORMAL = 0
     STATE_LOADING = 1    
     BASIC_TAB = 0
@@ -104,7 +100,9 @@ class Application(object):
         """
         Get a new GdkPixbuf for the app's main icon rendered at size.
         """
-        pixbuf_file = os.path.join(self.DATA_DIR, "icons", "scalable", "desktop-entry-editor.svg")
+        pixbuf_file = os.path.join(self.ICON_DIR, "scalable", "desktop-entry-editor.svg")
+        if not os.path.exists(pixbuf_file):
+            return None
         if size:
             pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(pixbuf_file, size, size, True)
         else:
@@ -122,19 +120,24 @@ class Application(object):
         dialog.run()
         dialog.destroy()
         
-    def __init__(self):
+    def __init__(self, package, version, data_dir):
         """
         Build UI from Glade XML file found in self.DATA_DIR.
         """
+        self.PACKAGE = package
+        self.VERSION = version
+        self.DATA_DIR = data_dir
+        self.UI_DIR = os.path.join(data_dir, package)
         
         builder = Gtk.Builder()
         try:
-            builder.add_from_file(os.path.join(self.DATA_DIR, "main_window.ui"))
+            builder.add_from_file(os.path.join(self.UI_DIR, "main_window.ui"))
         except Exception as e:
-            sys.exit("Failed to load UI file: %s." % str(e))
+            logger.debug(self.UI_DIR)
+            sys.exit(str(e))
         self.window = builder.get_object("main_window")
         # TODO use custom icon name (themed icon)
-        self.window.set_icon(self._get_app_icon_pixbuf())
+        self.window.set_icon_name(self.PACKAGE)
         self._notebook = builder.get_object("notebook")
         self._statusbar = builder.get_object("statusbar")
         self._statusbar_ctx = self._statusbar.get_context_id("Selected entry.")
@@ -327,7 +330,7 @@ class Application(object):
         manager.insert_action_group(self._save_actions)
         manager.insert_action_group(self._open_actions)
         
-        ui_file = os.path.join(self.DATA_DIR, 'menu_toolbar.ui')
+        ui_file = os.path.join(self.UI_DIR, 'menu_toolbar.ui')
         manager.add_ui_from_file(ui_file)
         menu = manager.get_widget('ui/MenuBar')
         toolbar = manager.get_widget('ui/MainToolbar')
@@ -524,9 +527,9 @@ class Application(object):
             return
         builder = Gtk.Builder()
         try:
-            builder.add_from_file(os.path.join(self.DATA_DIR, "icon_preview_dialog.ui"))
+            builder.add_from_file(os.path.join(self.UI_DIR, "icon_preview_dialog.ui"))
         except Exception as e:
-            sys.exit("Failed to load UI file: %s." % str(e))
+            sys.exit(str(e))
         dialog = builder.get_object("icon_preview_dialog")
         label = builder.get_object("icon_name_label")
         label.set_markup("<b>%s</b>" % self._entry.getIcon())

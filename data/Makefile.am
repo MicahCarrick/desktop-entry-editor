@@ -1,4 +1,4 @@
-#SUBDIRS = icons
+SUBDIRS = ui icons
 
 desktopdir = $(datadir)/applications
 desktop_in_files=desktop-entry-editor.desktop.in

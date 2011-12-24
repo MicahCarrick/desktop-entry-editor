@@ -10,10 +10,9 @@ try:
 except ImportError, e:
     msg = "Could not find 'dee' package. This is likely an installation error."
     sys.exit("%s\n%s" % (msg, e))
-    	
+
 if __name__ == "__main__":
-    app = Application()
-    app.VERSION = '@VERSION@'
-    app.PACKAGE = '@PACKAGE@'
-    app.DATA_DIR = "@datarootdir@".replace("${prefix}", "@prefix@")
+    app = Application('@PACKAGE@', 
+                      '@VERSION@', 
+                      "@datarootdir@".replace("${prefix}", "@prefix@"))
     app.run()

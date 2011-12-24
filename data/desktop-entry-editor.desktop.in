@@ -1,0 +1,9 @@
+[Desktop Entry]
+_Name=Desktop Entry Editor
+_Comment=Edit desktop entry files and application launchers
+Terminal=false
+Type=Application
+Exec=desktop-entry-editor
+StartupNotify=true
+Categories=Accessories;
+Icon=desktop-entry-editor

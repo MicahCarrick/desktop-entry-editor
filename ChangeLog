@@ -1,0 +1,4 @@
+2012-01-01  Micah Carrick  <micah@quixotix.com>
+
+        * *: The ChangeLog is auto-generated when releasing. If you
+        are seeing this, use 'git log' for a detailed list of changes.

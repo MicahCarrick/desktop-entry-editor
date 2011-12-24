@@ -4,7 +4,10 @@ import sys
 import logging
 import subprocess
 import tempfile
-from gi.repository import GObject, Gio, Gdk, GdkPixbuf, Gtk, Pango
+from gi.repository import GObject, Gio
+from gi.repository import Pango
+from gi.repository import Gdk, GdkPixbuf, Gtk
+# TODO: GtkSourceView should be optional
 from gi.repository import GtkSource
 from dee.entry import Entry
 from xdg.Exceptions import  ParsingError, ValidationError
@@ -25,9 +28,9 @@ class Application(object):
     
     STATE_NORMAL = 0
     STATE_LOADING = 1    
-    
-    SOURCE_TAB = 2
+    BASIC_TAB = 0
     ADVANCED_TAB = 1
+    SOURCE_TAB = 2
     
     # http://standards.freedesktop.org/desktop-entry-spec/latest/ar01s05.html
     ALL_KEYS = (

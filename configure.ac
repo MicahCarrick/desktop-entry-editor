@@ -47,5 +47,6 @@ data/desktop-entry-editor.desktop
 po/Makefile.in
 src/Makefile
 src/desktop-entry-editor
+src/dee/Makefile
 ])
 

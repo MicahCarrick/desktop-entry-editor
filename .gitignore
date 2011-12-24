@@ -1,5 +1,6 @@
 *.pyc
 *.tar.gz
+
 aclocal.m4
 config.log
 configure
@@ -8,6 +9,8 @@ install-sh
 Makefile
 Makefile.in
 missing
+py-compile
+
 autom4te.cache/
 m4/intltool.m4
 po/POTFILES

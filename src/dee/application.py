@@ -15,7 +15,6 @@ from xdg.BaseDirectory import xdg_data_dirs
 
 APP_NAME = "Desktop Entry Editor"
 APP_DESCRIPTION = "A Desktop Entry editor based on \nthe freedesktop.org specifications."
-DATA_DIR = "data"
 SETTINGS_SCHEMA = "apps.desktop-entry-editor"
 
 logging.basicConfig()
@@ -25,7 +24,7 @@ logger.setLevel(LOG_LEVEL)
 
 class Application(object):
     
-    # populated by automake
+    DATA_DIR = ""
     PACKAGE = ""
     VERSION = ""
     
@@ -105,7 +104,7 @@ class Application(object):
         """
         Get a new GdkPixbuf for the app's main icon rendered at size.
         """
-        pixbuf_file = os.path.join(DATA_DIR, "icons", "scalable", "desktop-entry-editor.svg")
+        pixbuf_file = os.path.join(self.DATA_DIR, "icons", "scalable", "desktop-entry-editor.svg")
         if size:
             pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(pixbuf_file, size, size, True)
         else:
@@ -125,12 +124,12 @@ class Application(object):
         
     def __init__(self):
         """
-        Build UI from Glade XML file found in DATA_DIR.
+        Build UI from Glade XML file found in self.DATA_DIR.
         """
         
         builder = Gtk.Builder()
         try:
-            builder.add_from_file(os.path.join(DATA_DIR, "main_window.ui"))
+            builder.add_from_file(os.path.join(self.DATA_DIR, "main_window.ui"))
         except Exception as e:
             sys.exit("Failed to load UI file: %s." % str(e))
         self.window = builder.get_object("main_window")
@@ -328,7 +327,7 @@ class Application(object):
         manager.insert_action_group(self._save_actions)
         manager.insert_action_group(self._open_actions)
         
-        ui_file = os.path.join(DATA_DIR, 'menu_toolbar.ui')
+        ui_file = os.path.join(self.DATA_DIR, 'menu_toolbar.ui')
         manager.add_ui_from_file(ui_file)
         menu = manager.get_widget('ui/MenuBar')
         toolbar = manager.get_widget('ui/MainToolbar')
@@ -525,7 +524,7 @@ class Application(object):
             return
         builder = Gtk.Builder()
         try:
-            builder.add_from_file(os.path.join(DATA_DIR, "icon_preview_dialog.ui"))
+            builder.add_from_file(os.path.join(self.DATA_DIR, "icon_preview_dialog.ui"))
         except Exception as e:
             sys.exit("Failed to load UI file: %s." % str(e))
         dialog = builder.get_object("icon_preview_dialog")
@@ -623,7 +622,7 @@ class Application(object):
                                         Gtk.FileChooserAction.OPEN,
                                         (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, 
                                          Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
-        for path in xdg_data_dirs:
+        for path in xdg_self.DATA_DIRs:
             path = os.path.join(path, "applications")
             if os.path.exists(path) and os.access(path, os.W_OK):
                 chooser.set_current_folder(path)
@@ -687,7 +686,7 @@ class Application(object):
         if self._entry and self._entry.filename:
             chooser.set_filename(self._entry.filename)
         else:
-            for path in xdg_data_dirs:
+            for path in xdg_self.DATA_DIRs:
                 path = os.path.join(path, "applications")
                 if os.path.exists(path) and os.access(path, os.W_OK):
                     chooser.set_current_folder(path)

@@ -6,6 +6,7 @@ configure
 config.status
 install-sh
 Makefile
+Makefile.in
 missing
 autom4te.cache/
 data/Makefile

@@ -28,14 +28,23 @@ dnl check for optional python modules
 
 
 dnl gettext
-IT_PROG_INTLTOOL
 
-dnl generate makefiles
+IT_PROG_INTLTOOL([0.35.0])
+
+GETTEXT_PACKAGE=desktop-entry-editor
+AC_SUBST(GETTEXT_PACKAGE)
+AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [The gettext package])
+AM_GLIB_GNU_GETTEXT
+
+
+
+dnl generate output
+
 AC_OUTPUT([
 Makefile
 data/Makefile
 data/desktop-entry-editor.desktop
-po/Makefile
+po/Makefile.in
 src/Makefile
 src/desktop-entry-editor
 ])

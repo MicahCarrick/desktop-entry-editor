@@ -9,6 +9,10 @@ Makefile
 Makefile.in
 missing
 autom4te.cache/
+m4/intltool.m4
+po/POTFILES
+po/Makefile.in.in
+po/stamp-it
 data/Makefile
 data/desktop-entry-editor.desktop
 src/desktop-entry-editor

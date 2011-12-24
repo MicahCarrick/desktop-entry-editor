@@ -1,6 +1,6 @@
 dnl minimum required version of autoconf
 
-AC_PREREQ([2.52])
+AC_PREREQ([2.60])
 
 dnl initialize autoconf
 
@@ -10,7 +10,7 @@ AC_INIT([Desktop Entry Editor],
         [desktop-entry-editor],
         [https://github.com/Quixotix/desktop-entry-editor])
 
-AC_CONFIG_SRCDIR([dee/application.py])
+AC_CONFIG_SRCDIR([src/dee/application.py])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE
 
@@ -35,5 +35,8 @@ AC_OUTPUT([
 Makefile
 data/Makefile
 data/desktop-entry-editor.desktop
+po/Makefile
+src/Makefile
+src/desktop-entry-editor
 ])
 

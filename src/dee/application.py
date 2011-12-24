@@ -15,7 +15,6 @@ from xdg.BaseDirectory import xdg_data_dirs
 
 APP_NAME = "Desktop Entry Editor"
 APP_DESCRIPTION = "A Desktop Entry editor based on \nthe freedesktop.org specifications."
-APP_VERSION = "0.1"
 DATA_DIR = "data"
 SETTINGS_SCHEMA = "apps.desktop-entry-editor"
 
@@ -25,6 +24,10 @@ logger = logging.getLogger(__name__)
 logger.setLevel(LOG_LEVEL)
 
 class Application(object):
+    
+    # populated by automake
+    PACKAGE = ""
+    VERSION = ""
     
     STATE_NORMAL = 0
     STATE_LOADING = 1    
@@ -491,7 +494,7 @@ class Application(object):
         dialog.set_copyright("Copyright (c) 2011, Quixotix Software LLC")
         dialog.set_logo(self._get_app_icon_pixbuf(128))
         dialog.set_program_name(APP_NAME)
-        dialog.set_version(APP_VERSION)
+        dialog.set_version(self.VERSION)
         dialog.set_comments(APP_DESCRIPTION)
         dialog.run()
         dialog.destroy()

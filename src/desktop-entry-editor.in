@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
 from dee.application import Application 
-        
+
 if __name__ == "__main__":
     app = Application()
+    app.VERSION = '@VERSION@'
+    app.PACKAGE = '@PACKAGE@'
+    app.DATA_DIR = "@datarootdir@".replace("${prefix}", "@prefix@")
     app.run()

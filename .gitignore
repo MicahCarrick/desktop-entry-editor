@@ -11,3 +11,4 @@ missing
 autom4te.cache/
 data/Makefile
 data/desktop-entry-editor.desktop
+src/desktop-entry-editor

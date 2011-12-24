@@ -1,1 +1,12 @@
 *.pyc
+*.tar.gz
+aclocal.m4
+config.log
+configure
+config.status
+install-sh
+Makefile
+missing
+autom4te.cache/
+data/Makefile
+data/desktop-entry-editor.desktop

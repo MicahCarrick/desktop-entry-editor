@@ -5,13 +5,20 @@ import os
 python_dir = "@pythondir@".replace("${prefix}", "@prefix@")
 sys.path.insert(1, python_dir)
 
+print sys.path
+
 try:
     from dee.application import Application 
 except ImportError, e:
     msg = "Could not find 'dee' package. This is likely an installation error."
     sys.exit("%s\n%s" % (msg, e))
 
+def install_exception_hook():
+    #TODO http://29a.ch/2009/1/8/pygtk-exception-hook
+    pass     
+    
 if __name__ == "__main__":
+    #install_exception_hook()
     app = Application('@PACKAGE@', 
                       '@VERSION@', 
                       "@datarootdir@".replace("${prefix}", "@prefix@"))

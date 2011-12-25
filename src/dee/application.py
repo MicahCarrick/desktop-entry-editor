@@ -13,8 +13,7 @@ from dee.entry import Entry
 from xdg.Exceptions import  ParsingError, ValidationError
 from xdg.BaseDirectory import xdg_data_dirs
 
-APP_NAME = "Desktop Entry Editor"
-APP_DESCRIPTION = "A Desktop Entry editor based on \nthe freedesktop.org specifications."
+
 SETTINGS_SCHEMA = "apps.desktop-entry-editor"
 
 logging.basicConfig()
@@ -23,6 +22,9 @@ logger = logging.getLogger(__name__)
 logger.setLevel(LOG_LEVEL)
 
 class Application(object):
+    
+    APP_NAME = "Desktop Entry Editor"
+    APP_DESCRIPTION = "A Desktop Entry editor based on freedesktop.org specifications."
     
     STATE_NORMAL = 0
     STATE_LOADING = 1    
@@ -397,6 +399,7 @@ class Application(object):
             path = os.path.join(path, "applications")
             logger.debug("Loading desktop entries from %s" % path)
             for desktop_file in glob.glob(os.path.join(path, "*.desktop")):
+                #logger.debug(desktop_file)
                 try:
                     entry = Entry(desktop_file)
                 except ParsingError, e:
@@ -494,10 +497,10 @@ class Application(object):
         dialog.set_modal(True)
         dialog.set_authors(("Micah Carrick <micah@quixotix.com>",))
         dialog.set_copyright("Copyright (c) 2011, Quixotix Software LLC")
-        dialog.set_logo(self._get_app_icon_pixbuf(128))
-        dialog.set_program_name(APP_NAME)
+        dialog.set_logo_icon_name(self.PACKAGE)
+        dialog.set_program_name(self.APP_NAME)
         dialog.set_version(self.VERSION)
-        dialog.set_comments(APP_DESCRIPTION)
+        dialog.set_comments(self.APP_DESCRIPTION)
         dialog.run()
         dialog.destroy()
 
@@ -819,7 +822,7 @@ class Application(object):
         
         # titlebar
         if not entry:
-            self.window.set_title(APP_NAME)
+            self.window.set_title(self.APP_NAME)
         else:
             read_only = modified_indicator = ""
             if entry.isReadOnly():
@@ -829,7 +832,7 @@ class Application(object):
             self.window.set_title("%s%s %s - %s" % (modified_indicator,
                                                     os.path.basename(entry.filename), 
                                                     read_only,
-                                                    APP_NAME))
+                                                    self.APP_NAME))
         # save buttons 
         if entry and entry.isModified() and not entry.isReadOnly():
             self._save_actions.set_sensitive(True)

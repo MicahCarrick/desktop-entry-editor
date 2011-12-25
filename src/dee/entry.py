@@ -26,13 +26,20 @@ class Entry(DesktopEntry):
         """
         icon = self.getIcon()
         icon_theme = Gtk.IconTheme.get_default()
+        default = icon_theme.load_icon(Gtk.STOCK_MISSING_IMAGE, size, 
+                                          Gtk.IconLookupFlags.USE_BUILTIN)
         if os.path.exists(icon):
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(icon, size, size)
+            try:
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(icon, size, size)
+            except:
+                pixbuf = default
         elif icon_theme.has_icon(icon):
-            pixbuf = icon_theme.load_icon(icon, size, 
-                                          Gtk.IconLookupFlags.USE_BUILTIN)
+            try:
+                pixbuf = icon_theme.load_icon(icon, size, 
+                                              Gtk.IconLookupFlags.USE_BUILTIN)
+            except:
+                pixbuf = default
         else:
-            pixbuf = icon_theme.load_icon(Gtk.STOCK_MISSING_IMAGE, size, 
-                                          Gtk.IconLookupFlags.USE_BUILTIN)
+            pixbuf = default
         
         return pixbuf

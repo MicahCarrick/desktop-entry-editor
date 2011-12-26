@@ -10,6 +10,7 @@ from gi.repository import Gdk, GdkPixbuf, Gtk
 # TODO: GtkSourceView should be optional
 from gi.repository import GtkSource
 from dee.entry import Entry
+from dee.exceptiondialog import ExceptionDialog
 from xdg.Exceptions import  ParsingError, ValidationError
 from xdg.BaseDirectory import xdg_data_dirs
 
@@ -345,6 +346,33 @@ class Application(object):
         box.pack_start(menu, False, True, 0)
         box.reorder_child(menu, 0)
         box.reorder_child(toolbar, 1)
+    
+    def install_exception_hook(self):
+        """
+        Install an exception hook to display unhandled exceptions in a dialog
+        and allow the user to submit a bug report.
+        """
+        def new_hook(etype, evalue, etraceback):
+            if etype not in (KeyboardInterrupt, SystemExit):
+                url = "https://github.com/Quixotix/desktop-entry-editor/issues/new" \
+                      "?title=Bug Report: %s" \
+                      "&body=Please paste your bug report here with CTRL+V.%%0A" \
+                      % (evalue)
+                dialog = ExceptionDialog(parent=self.window,
+                                         bug_report_url=url)
+                dialog.set_markup("<b>Fatal Error</b>\n\n"
+                                  "An unhandled exception has occured and the "
+                                  "program will now exit.\n"
+                                  "A detailed report has been copied to your "
+                                  "clipboard.\nUse the link below to submit a "
+                                  "bug report.")
+                dialog.run(etype, evalue, etraceback)
+                dialog.destroy()
+            if Gtk.main_level():
+                Gtk.main_quit()
+        old_hook = sys.excepthook
+        sys.excepthook = new_hook
+        return old_hook
         
     def _load_desktop_entry_ui(self):
         """
@@ -617,7 +645,7 @@ class Application(object):
                                     
     def on_view_toolbar_toggled(self, action, data=None):
         # TODO
-        pass
+        raise Exception("Testing")
     
     def open_dialog(self):
         """
@@ -675,7 +703,7 @@ class Application(object):
     def run(self):
         """
         Show the main application window and enter GTK+ main loop.
-        """
+        """      
         self.window.show()
         Gtk.main()
     

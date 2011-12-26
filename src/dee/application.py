@@ -467,7 +467,8 @@ class Application(object):
         self._entry = Entry()
         filename = self.save_dialog()
         if filename:
-            #TODO make sure filename is .desktop or .directory
+            if filename[-8:] != ".desktop":
+                filename = filename + ".desktop"
             self._entry.new(filename)
             self._entry.set("Name", "Untitled")
             logger.debug(self._entry.getName())

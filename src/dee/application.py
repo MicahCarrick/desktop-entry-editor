@@ -12,7 +12,7 @@ from gi.repository import GtkSource
 from dee.entry import Entry
 from dee.exceptiondialog import ExceptionDialog
 from xdg.Exceptions import  ParsingError, ValidationError
-from xdg.BaseDirectory import xdg_data_dirs
+from xdg.BaseDirectory import xdg_data_dirs, xdg_data_home
 
 
 SETTINGS_SCHEMA = "apps.desktop-entry-editor"
@@ -62,6 +62,14 @@ class Application(object):
         self._entry = None
         self._load_desktop_entry_ui()
         # TODO deselect tree view
+    
+    def _ensure_user_dir(self):
+        """
+        Ensures the user's applications directory exists.
+        """
+        path = os.path.join(xdg_data_home, "applications")
+        if not os.path.exists(path):
+            os.makedirs(path)
         
     def error_dialog(self, message):
         """ Display a very basic error dialog. """
@@ -611,6 +619,7 @@ class Application(object):
         pass
     
     def on_main_window_show(self, window, data=None):
+        self._ensure_user_dir()        
         self._load_treeview()
         pass
     

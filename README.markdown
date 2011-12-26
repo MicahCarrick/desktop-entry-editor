@@ -33,7 +33,7 @@ these additional packages:
 * Autotools (`automake`, `autoconf`, `intltool`, `m4`, `gettext`)
 
 
-### Build Current Release from Source ###
+### Build a Release Version ###
 
 Download the latest release from the [Downloads Page][3] and then run:
     
@@ -49,7 +49,7 @@ Become root user (`su` or `sudo`) and then run:
     make install
     
 
-### Build Development Version from Source ###
+### Build the Development Version ###
 
     git clone https://github.com/Quixotix/desktop-entry-editor.git
     cd desktop-entry-editor

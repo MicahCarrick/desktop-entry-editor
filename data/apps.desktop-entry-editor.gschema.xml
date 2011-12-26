@@ -4,12 +4,17 @@
     <key type="b" name="show-read-only-files">
       <default>true</default>
       <summary>Show Read-Only Files</summary>
-      <description>When true, the list of desktop entries in the side pane will include read-only files.</description>
+      <description>
+        When true, the list of desktop entries in the side pane will 
+        include read-only files.
+      </description>
     </key>
     <key type="b" name="show-toolbar">
       <default>true</default>
       <summary>Show Toolbar</summary>
-      <description>When true, shows a toolbar in the main application window.</description>
+      <description>
+        When true, shows a toolbar in the main application window.
+      </description>
     </key>
   </schema>
 </schemalist>

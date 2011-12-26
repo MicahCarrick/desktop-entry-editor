@@ -29,7 +29,7 @@ If you are going to be building Desktop entry Editor from source you may need
 these additional packages:
 
 * GLib development headers (Fedora `glib2-devel`, Ubuntu `libglib2-dev`)
-* Translation tools `intltool`
+* Autotools (`automake`, `autoconf`, `intltool`, `m4`, `gettext`)
 
 
 ### Build Current Release from Source ###

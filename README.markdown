@@ -28,7 +28,7 @@ software repositories.
 If you are going to be building Desktop entry Editor from source you may need
 these additional packages:
 
-* GLib development headers (Fedora `glib2-devel`, Ubuntu `libglib2-dev`)
+* GLib development headers (Fedora `glib2-devel`, Ubuntu `libglib2.0-dev`)
 * Autotools (`automake`, `autoconf`, `intltool`, `m4`, `gettext`)
 
 

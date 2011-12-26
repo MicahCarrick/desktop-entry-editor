@@ -6,6 +6,7 @@ launchers for GNOME, KDE, XFCE, and any other desktop environment implementing
 the [Desktop Entry Specification] [1] from freedesktop.org.
 
 1. [Install](#install)
+1. [Bug Reports](#bugs)
 
 ![Desktop Entry Editor running on GNOME 3.2 in Fedora 16][2]
 

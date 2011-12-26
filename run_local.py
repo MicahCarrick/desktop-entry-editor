@@ -3,9 +3,9 @@ import sys
 import os
 
 python_dir = "@pythondir@".replace("${prefix}", "@prefix@")
-sys.path.insert(1, python_dir)
+sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'src'))
 
-data_dir = "@datarootdir@".replace("${prefix}", "@prefix@")
+print sys.path
 
 try:
     from dee.application import Application 
@@ -13,8 +13,9 @@ except ImportError, e:
     sys.exit(str(e))
  
 if __name__ == "__main__":
-    app = Application('@PACKAGE@', 
-                      '@VERSION@', 
-                      os.path.join(data_dir, '@PACKAGE@'))
+    app = Application('desktop-entry-editor', 
+                      '0-debug', 
+                      os.path.join(os.path.dirname(__file__), 'data'),
+                      debug=True)
     app.install_exception_hook()
     app.run()

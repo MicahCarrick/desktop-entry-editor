@@ -1,4 +1,4 @@
-uidir = $(datadir)/$(PACKAGE)
+uidir = $(datadir)/$(PACKAGE)/ui
 ui_DATA = \
 	icon_preview_dialog.ui \
 	main_window.ui \

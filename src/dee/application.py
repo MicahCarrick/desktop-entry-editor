@@ -18,9 +18,8 @@ from xdg.BaseDirectory import xdg_data_dirs
 SETTINGS_SCHEMA = "apps.desktop-entry-editor"
 
 logging.basicConfig()
-LOG_LEVEL = logging.DEBUG
 logger = logging.getLogger(__name__)
-logger.setLevel(LOG_LEVEL)
+logger.setLevel(logging.ERROR)
 
 class Application(object):
     
@@ -123,14 +122,22 @@ class Application(object):
         dialog.run()
         dialog.destroy()
         
-    def __init__(self, package, version, data_dir):
+    def __init__(self, package, version, data_dir, debug=False):
         """
         Build UI from Glade XML file found in self.DATA_DIR.
         """
+        if debug:
+            logger.setLevel(logging.DEBUG)
+            
         self.PACKAGE = package
         self.VERSION = version
         self.DATA_DIR = data_dir
-        self.UI_DIR = os.path.join(data_dir, package)
+        self.UI_DIR = os.path.join(data_dir, 'ui')
+        
+        logger.debug("-"*60)
+        logger.debug("  %s %s" % (self.PACKAGE, self.VERSION))
+        logger.debug("  DATA DIR: " + self.DATA_DIR)
+        logger.debug("-"*60)
         
         builder = Gtk.Builder()
         try:

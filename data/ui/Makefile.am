@@ -7,8 +7,3 @@ ui_DATA = \
 EXTRA_DIST = \
 	$(ui_DATA) 
 
-CLEANFILES = \
-	$(ui_DATA)		
-	
-DISTCLEANFILES = \
-	$(ui_DATA)

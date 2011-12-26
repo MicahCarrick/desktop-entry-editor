@@ -14,9 +14,10 @@ EXTRA_DIST = \
 	apps.desktop-entry-editor.gschema.xml
 
 CLEANFILES = \
-	$(desktop_DATA)	\
-	$(gsettings_SCHEMAS)	
+	$(desktop_DATA)	
 	
 DISTCLEANFILES = \
-	$(desktop_DATA) \
-	$(gsettings_SCHEMAS)
+	$(desktop_DATA) 
+
+install-data-hook:
+	update-desktop-database $(datadir)/applications || :

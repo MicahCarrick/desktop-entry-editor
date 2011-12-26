@@ -14,6 +14,10 @@ AC_CONFIG_SRCDIR([src/dee/application.py])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE
 
+dnl check for glib2 (required for GLIB_GSETTINGS macro to work)
+
+PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.28])
+
 dnl check for required pythonmodules
 
 AM_PATH_PYTHON([2.5])

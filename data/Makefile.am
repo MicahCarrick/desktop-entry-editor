@@ -11,7 +11,7 @@ gsettings_SCHEMAS = apps.desktop-entry-editor.gschema.xml
 
 EXTRA_DIST = \
 	$(desktop_in_files) \
-	org.gnome.gedit.gschema.xml.in.in
+	apps.desktop-entry-editor.gschema.xml
 
 CLEANFILES = \
 	$(desktop_DATA)	\

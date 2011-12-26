@@ -5,10 +5,10 @@ ui_DATA = \
 	menu_toolbar.ui 
 
 EXTRA_DIST = \
-	$(desktop_in_files) 
+	$(ui_DATA) 
 
 CLEANFILES = \
-	$(desktop_DATA)		
+	$(ui_DATA)		
 	
 DISTCLEANFILES = \
-	$(desktop_DATA)
+	$(ui_DATA)

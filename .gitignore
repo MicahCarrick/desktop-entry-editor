@@ -18,4 +18,5 @@ po/Makefile.in.in
 po/stamp-it
 data/Makefile
 data/desktop-entry-editor.desktop
+data/*.gschema.valid
 src/desktop-entry-editor

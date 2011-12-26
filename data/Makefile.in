@@ -133,9 +133,11 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 GETTEXT_PACKAGE = @GETTEXT_PACKAGE@
+GLIB_COMPILE_SCHEMAS = @GLIB_COMPILE_SCHEMAS@
 GMOFILES = @GMOFILES@
 GMSGFMT = @GMSGFMT@
 GREP = @GREP@
+GSETTINGS_DISABLE_SCHEMAS_COMPILE = @GSETTINGS_DISABLE_SCHEMAS_COMPILE@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -166,6 +168,9 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PKG_CONFIG = @PKG_CONFIG@
+PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
+PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 POFILES = @POFILES@
 POSUB = @POSUB@
 PO_IN_DATADIR_FALSE = @PO_IN_DATADIR_FALSE@
@@ -199,6 +204,7 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
+gsettingsschemadir = @gsettingsschemadir@
 host_alias = @host_alias@
 htmldir = @htmldir@
 includedir = @includedir@
@@ -231,14 +237,20 @@ SUBDIRS = ui icons
 desktopdir = $(datadir)/applications
 desktop_in_files = desktop-entry-editor.desktop.in
 desktop_DATA = $(desktop_in_files:.desktop.in=.desktop)
+
+#gsettings_ENUM_NAMESPACE = apps.desktop-entry-editor
+gsettings_SCHEMAS = apps.desktop-entry-editor.gschema.xml
 EXTRA_DIST = \
-	$(desktop_in_files) 
+	$(desktop_in_files) \
+	org.gnome.gedit.gschema.xml.in.in
 
 CLEANFILES = \
-	$(desktop_DATA)		
+	$(desktop_DATA)	\
+	$(gsettings_SCHEMAS)	
 
 DISTCLEANFILES = \
-	$(desktop_DATA)
+	$(desktop_DATA) \
+	$(gsettings_SCHEMAS)
 
 all: all-recursive
 
@@ -608,6 +620,7 @@ uninstall-am: uninstall-desktopDATA
 	uninstall-desktopDATA
 
 @INTLTOOL_DESKTOP_RULE@
+@GSETTINGS_RULES@
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

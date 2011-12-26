@@ -5,11 +5,18 @@ desktop_in_files=desktop-entry-editor.desktop.in
 desktop_DATA = $(desktop_in_files:.desktop.in=.desktop)
 @INTLTOOL_DESKTOP_RULE@
 
-EXTRA_DIST = \
-	$(desktop_in_files) 
+#gsettings_ENUM_NAMESPACE = apps.desktop-entry-editor
+gsettings_SCHEMAS = apps.desktop-entry-editor.gschema.xml
+@GSETTINGS_RULES@
 
-CLEANFILES =	 			\
-	$(desktop_DATA)		
+EXTRA_DIST = \
+	$(desktop_in_files) \
+	org.gnome.gedit.gschema.xml.in.in
+
+CLEANFILES = \
+	$(desktop_DATA)	\
+	$(gsettings_SCHEMAS)	
 	
 DISTCLEANFILES = \
-	$(desktop_DATA)
+	$(desktop_DATA) \
+	$(gsettings_SCHEMAS)

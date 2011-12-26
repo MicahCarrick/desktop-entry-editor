@@ -146,7 +146,6 @@ class Application(object):
             logger.debug(self.UI_DIR)
             sys.exit(str(e))
         self.window = builder.get_object("main_window")
-        # TODO use custom icon name (themed icon)
         self.window.set_icon_name(self.PACKAGE)
         self._notebook = builder.get_object("notebook")
         self._statusbar = builder.get_object("statusbar")

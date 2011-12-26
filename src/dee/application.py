@@ -726,7 +726,7 @@ class Application(object):
         if self._entry and self._entry.filename:
             chooser.set_filename(self._entry.filename)
         else:
-            for path in xdg_self.DATA_DIRs:
+            for path in xdg_data_dirs:
                 path = os.path.join(path, "applications")
                 if os.path.exists(path) and os.access(path, os.W_OK):
                     chooser.set_current_folder(path)

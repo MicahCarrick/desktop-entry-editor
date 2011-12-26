@@ -7,8 +7,7 @@ sys.path.insert(1, python_dir)
 try:
     from dee.application import Application 
 except ImportError, e:
-    msg = "Could not find 'dee' package. This is likely an installation error."
-    sys.exit("%s\n%s" % (msg, e))
+    sys.exit(str(e))
  
 if __name__ == "__main__":
     app = Application('@PACKAGE@', 

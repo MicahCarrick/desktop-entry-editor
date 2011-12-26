@@ -12,7 +12,7 @@
       <menuitem action="Quit"/>
     </menu>
     <menu action="View">
-      <menuitem action="ViewToolbar"/>
+      <!--<menuitem action="ViewToolbar"/>-->
       <menuitem action="ViewReadOnly"/>
       <separator/>
       <menuitem action="Refresh"/>

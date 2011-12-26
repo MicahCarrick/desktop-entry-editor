@@ -308,8 +308,8 @@ class Application(object):
             ('ViewReadOnly', None, "Show _read-only files", None, None, 
                 self.on_view_read_only_toggled, 
                 self._settings.get_boolean("show-read-only-files")),
-            ('ViewToolbar', None, "_Toolbar", None, None, 
-                self.on_view_toolbar_toggled, False),
+            #('ViewToolbar', None, "_Toolbar", None, None, 
+            #    self.on_view_toolbar_toggled, False),
         ])
            
         self._save_actions = Gtk.ActionGroup("SaveActions")
@@ -656,7 +656,7 @@ class Application(object):
                                         Gtk.FileChooserAction.OPEN,
                                         (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, 
                                          Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
-        for path in xdg_self.DATA_DIRs:
+        for path in xdg_data_dirs:
             path = os.path.join(path, "applications")
             if os.path.exists(path) and os.access(path, os.W_OK):
                 chooser.set_current_folder(path)

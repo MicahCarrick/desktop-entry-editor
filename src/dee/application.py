@@ -752,8 +752,7 @@ class Application(object):
         return filename
         
     def save_file(self, filename):
-        # TODO confirm user wants to save if the file is invalid   
-        # TODO update desktop database      
+        # TODO confirm user wants to save if the file is invalid             
         self._entry.write(filename)
         self._load_treeview()
         self.set_modified(False)

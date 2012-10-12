@@ -307,13 +307,13 @@ class Application(object):
             ('View', None, '_View', None, None, None),
             ('Tools', None, '_Tools', None, None, None),
             ('Help', None, '_Help', None, None, None),
-            ('New', Gtk.STOCK_NEW, None, None, None, 
+            ('New', Gtk.STOCK_NEW, None, None, "Create new",
                 self.on_file_new_activate),
-            ('Open', Gtk.STOCK_OPEN, None, None, None, 
+            ('Open', Gtk.STOCK_OPEN, None, None, "Open file",
                 self.on_file_open_activate),
             ('Quit', Gtk.STOCK_QUIT, None, None, None, 
                 self.quit),
-            ('Refresh', Gtk.STOCK_REFRESH, None, None, None, 
+            ('Refresh', Gtk.STOCK_REFRESH, None, None, "Refresh list",
                 self.on_view_refresh_activate),
             ('About', Gtk.STOCK_ABOUT, None, None, None, 
                 self.on_help_about_activate),
@@ -328,7 +328,7 @@ class Application(object):
            
         self._save_actions = Gtk.ActionGroup("SaveActions")
         self._save_actions.add_actions([
-            ('Save', Gtk.STOCK_SAVE, None, None, None,
+            ('Save', Gtk.STOCK_SAVE, None, None, "Save current file",
                 self.on_file_save_activate),
         ])
         self._save_actions.set_sensitive(False)

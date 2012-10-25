@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 from gi.repository import GObject, Gio
 from gi.repository import Pango
-from gi.repository import Gdk, GdkPixbuf, Gtk
+from gi.repository import Gdk, GdkPixbuf, Gtk, GLib
 # TODO: GtkSourceView should be optional
 from gi.repository import GtkSource
 from dee.entry import Entry
@@ -454,14 +454,14 @@ class Application(object):
                     tooltip = entry.getGenericName()
                 else:
                     tooltip = entry.getName()
+                tooltip = GLib.markup_escape_text(tooltip)
                 
+                markup = GLib.markup_escape_text(entry.getName())
                 if entry.isReadOnly():
                     if show_ro:
-                        markup = "<span color='#888888'>%s</span>" % entry.getName()
+                        markup = "<span color='#888888'>%s</span>" % markup
                     else:
                         continue # skip read-only per settings
-                else:
-                    markup = entry.getName()
                 
                 model.append((pixbuf, entry.getName(), desktop_file, tooltip, markup,))
         self._treeview.get_bin_window().set_cursor(None)
@@ -578,7 +578,7 @@ class Application(object):
             sys.exit(str(e))
         dialog = builder.get_object("icon_preview_dialog")
         label = builder.get_object("icon_name_label")
-        label.set_markup("<b>%s</b>" % self._entry.getIcon())
+        label.set_markup("<b>%s</b>" % GLib.markup_escape_text(self._entry.getIcon()))
         button = builder.get_object("close_button")
         button.connect("clicked", lambda button,dialog: dialog.destroy(), dialog)
         dialog.set_transient_for(self.window)
@@ -804,6 +804,7 @@ class Application(object):
                 value = str(self._entry.get(key))
             except:
                 value = None
+            tooltip = GLib.markup_escape_text(tooltip)
             model.append((key, value, tooltip,))
     
     def _update_basic_tab(self):

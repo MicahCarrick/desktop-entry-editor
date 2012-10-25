@@ -555,9 +555,15 @@ class Application(object):
         self._ui_value_changed("Icon", icon)
 
         icon_theme = Gtk.IconTheme.get_default()
-        if os.path.exists(icon):
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(icon, 16, 16)
-            entry.set_property("primary-icon-pixbuf", pixbuf)
+        if os.path.isfile(icon):
+            try:
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(icon, 16, 16)
+            except GLib.GError, e:
+                pass    # this happens for files that aren't images
+            except Exception, e:
+                logger.warn(e)
+            else:
+                entry.set_property("primary-icon-pixbuf", pixbuf)
         elif icon_theme.has_icon(icon):
             #pixbuf = icon_theme.load_icon(icon, 16, Gtk.IconLookupFlags.USE_BUILTIN)
             entry.set_property("primary-icon-name", icon)

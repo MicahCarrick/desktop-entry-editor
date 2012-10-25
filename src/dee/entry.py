@@ -1,5 +1,4 @@
 import os
-import tempfile
 from xdg.DesktopEntry import DesktopEntry
 from gi.repository import GdkPixbuf, Gtk
 

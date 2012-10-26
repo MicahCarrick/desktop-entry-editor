@@ -432,6 +432,8 @@ class Application(object):
         
         self._treeview.get_bin_window().set_cursor(Gdk.Cursor(Gdk.CursorType.WATCH))
         self._status_push("Loading...")
+        while Gtk.events_pending():
+            Gtk.main_iteration()
         
         model = self._treeview.get_model()
         model.clear()
@@ -764,11 +766,9 @@ class Application(object):
         
     def _status_push(self, status):
         """
-        Push a status message into the statusbar and ensure it is shown.
+        Push a status message into the statusbar.
         """
         self._statusbar.push(self._statusbar_ctx, status)
-        while Gtk.events_pending():
-            Gtk.main_iteration()
     
     def _ui_value_changed(self, key, value):
         """

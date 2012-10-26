@@ -9,7 +9,7 @@ from gi.repository import Pango
 from gi.repository import Gdk, GdkPixbuf, Gtk, GLib
 # TODO: GtkSourceView should be optional
 from gi.repository import GtkSource
-from dee.entry import Entry
+from dee.entry import Entry, get_icon_pixbuf
 from dee.exceptiondialog import ExceptionDialog
 from xdg.Exceptions import  ParsingError, ValidationError
 from xdg.BaseDirectory import xdg_data_dirs, xdg_data_home
@@ -554,21 +554,7 @@ class Application(object):
         icon = entry.get_text()
         self._ui_value_changed("Icon", icon)
 
-        icon_theme = Gtk.IconTheme.get_default()
-        if os.path.isfile(icon):
-            try:
-                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(icon, 16, 16)
-            except GLib.GError, e:
-                pass    # this happens for files that aren't images
-            except Exception, e:
-                logger.warn(e)
-            else:
-                entry.set_property("primary-icon-pixbuf", pixbuf)
-        elif icon_theme.has_icon(icon):
-            #pixbuf = icon_theme.load_icon(icon, 16, Gtk.IconLookupFlags.USE_BUILTIN)
-            entry.set_property("primary-icon-name", icon)
-        else:
-            entry.set_property("primary-icon-name", Gtk.STOCK_MISSING_IMAGE)
+        entry.set_property("primary-icon-pixbuf", get_icon_pixbuf(icon, 16))
 
     def on_icon_entry_icon_press(self, entry, icon_pos, event, data=None):
         """

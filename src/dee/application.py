@@ -633,7 +633,6 @@ class Application(object):
         """
         model, iter = selection.get_selected()
         if model and iter:
-            self.close_file()
             self.open_file(model.get_value(iter, 2))
     
     def on_url_entry_changed(self, entry, data=None):

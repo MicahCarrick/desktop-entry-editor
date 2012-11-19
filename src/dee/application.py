@@ -6,10 +6,10 @@ import subprocess
 import tempfile
 from gi.repository import GObject, Gio
 from gi.repository import Pango
-from gi.repository import Gdk, GdkPixbuf, Gtk
+from gi.repository import Gdk, GdkPixbuf, Gtk, GLib
 # TODO: GtkSourceView should be optional
 from gi.repository import GtkSource
-from dee.entry import Entry
+from dee.entry import Entry, get_icon_pixbuf
 from dee.exceptiondialog import ExceptionDialog
 from xdg.Exceptions import  ParsingError, ValidationError
 from xdg.BaseDirectory import xdg_data_dirs, xdg_data_home
@@ -307,13 +307,13 @@ class Application(object):
             ('View', None, '_View', None, None, None),
             ('Tools', None, '_Tools', None, None, None),
             ('Help', None, '_Help', None, None, None),
-            ('New', Gtk.STOCK_NEW, None, None, None, 
+            ('New', Gtk.STOCK_NEW, None, None, "Create new",
                 self.on_file_new_activate),
-            ('Open', Gtk.STOCK_OPEN, None, None, None, 
+            ('Open', Gtk.STOCK_OPEN, None, None, "Open file",
                 self.on_file_open_activate),
             ('Quit', Gtk.STOCK_QUIT, None, None, None, 
                 self.quit),
-            ('Refresh', Gtk.STOCK_REFRESH, None, None, None, 
+            ('Refresh', Gtk.STOCK_REFRESH, None, None, "Refresh list",
                 self.on_view_refresh_activate),
             ('About', Gtk.STOCK_ABOUT, None, None, None, 
                 self.on_help_about_activate),
@@ -328,7 +328,7 @@ class Application(object):
            
         self._save_actions = Gtk.ActionGroup("SaveActions")
         self._save_actions.add_actions([
-            ('Save', Gtk.STOCK_SAVE, None, None, None,
+            ('Save', Gtk.STOCK_SAVE, None, None, "Save current file",
                 self.on_file_save_activate),
         ])
         self._save_actions.set_sensitive(False)
@@ -432,6 +432,8 @@ class Application(object):
         
         self._treeview.get_bin_window().set_cursor(Gdk.Cursor(Gdk.CursorType.WATCH))
         self._status_push("Loading...")
+        while Gtk.events_pending():
+            Gtk.main_iteration()
         
         model = self._treeview.get_model()
         model.clear()
@@ -454,14 +456,14 @@ class Application(object):
                     tooltip = entry.getGenericName()
                 else:
                     tooltip = entry.getName()
+                tooltip = GLib.markup_escape_text(tooltip)
                 
+                markup = GLib.markup_escape_text(entry.getName())
                 if entry.isReadOnly():
                     if show_ro:
-                        markup = "<span color='#888888'>%s</span>" % entry.getName()
+                        markup = "<span color='#888888'>%s</span>" % markup
                     else:
                         continue # skip read-only per settings
-                else:
-                    markup = entry.getName()
                 
                 model.append((pixbuf, entry.getName(), desktop_file, tooltip, markup,))
         self._treeview.get_bin_window().set_cursor(None)
@@ -554,15 +556,7 @@ class Application(object):
         icon = entry.get_text()
         self._ui_value_changed("Icon", icon)
 
-        icon_theme = Gtk.IconTheme.get_default()
-        if os.path.exists(icon):
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(icon, 16, 16)
-            entry.set_property("primary-icon-pixbuf", pixbuf)
-        elif icon_theme.has_icon(icon):
-            #pixbuf = icon_theme.load_icon(icon, 16, Gtk.IconLookupFlags.USE_BUILTIN)
-            entry.set_property("primary-icon-name", icon)
-        else:
-            entry.set_property("primary-icon-name", Gtk.STOCK_MISSING_IMAGE)
+        entry.set_property("primary-icon-pixbuf", get_icon_pixbuf(icon, 16))
 
     def on_icon_entry_icon_press(self, entry, icon_pos, event, data=None):
         """
@@ -578,7 +572,7 @@ class Application(object):
             sys.exit(str(e))
         dialog = builder.get_object("icon_preview_dialog")
         label = builder.get_object("icon_name_label")
-        label.set_markup("<b>%s</b>" % self._entry.getIcon())
+        label.set_markup("<b>%s</b>" % GLib.markup_escape_text(self._entry.getIcon()))
         button = builder.get_object("close_button")
         button.connect("clicked", lambda button,dialog: dialog.destroy(), dialog)
         dialog.set_transient_for(self.window)
@@ -641,7 +635,6 @@ class Application(object):
         """
         model, iter = selection.get_selected()
         if model and iter:
-            self.close_file()
             self.open_file(model.get_value(iter, 2))
     
     def on_url_entry_changed(self, entry, data=None):
@@ -773,11 +766,9 @@ class Application(object):
         
     def _status_push(self, status):
         """
-        Push a status message into the statusbar and ensure it is shown.
+        Push a status message into the statusbar.
         """
         self._statusbar.push(self._statusbar_ctx, status)
-        while Gtk.events_pending():
-            Gtk.main_iteration()
     
     def _ui_value_changed(self, key, value):
         """
@@ -804,6 +795,7 @@ class Application(object):
                 value = str(self._entry.get(key))
             except:
                 value = None
+            tooltip = GLib.markup_escape_text(tooltip)
             model.append((key, value, tooltip,))
     
     def _update_basic_tab(self):

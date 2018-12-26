@@ -1,4 +1,4 @@
-Desktop Entry Editor
+MicahCarrickDesktop Entry Editor
 ===========================================================
 
 Desktop Entry Editor is a GUI application for editing and creating application
@@ -18,8 +18,8 @@ Install <a id="install"/>
 
 ### Requirements ###
 
-The following packages are needed to run Desktop Entry Editor. Most newer Linux 
-distributions will already have these packages installed or available in their 
+The following packages are needed to run Desktop Entry Editor. Most newer Linux
+distributions will already have these packages installed or available in their
 software repositories.
 
 * [GTK+ 3][4] (Fedora `gtk3`, Ubuntu `libgtk-3-0`)
@@ -34,25 +34,9 @@ these additional packages:
 * Autotools (`automake`, `autoconf`, `intltool`, `m4`, `gettext`)
 
 
-### Build a Release Version ###
+### Build Instructions ###
 
-Download the latest release from the [Downloads Page][3] and then run:
-    
-    tar -xzf desktop-entry-editor-x.x.x.tar.gz
-    cd desktop-entry-editor-x.x.x
-    ./configure
-    make
-
-_Note: replace `x.x.x` with the version number from the file you downloaded._
-
-Become root user (`su` or `sudo`) and then run:
-
-    make install
-    
-
-### Build the Development Version ###
-
-    git clone https://github.com/Quixotix/desktop-entry-editor.git
+    git clone https://github.com/MicahCarrick/desktop-entry-editor.git
     cd desktop-entry-editor
     aclocal -I m4
     intltoolize
@@ -70,7 +54,7 @@ Become root user (`su` or `sudo`) and then run:
 Basic Use <a id="use"/>
 -----------------------------------------------------------
 
-The left-hand side of the Desktop Entry Editor interface contains a list 
+The left-hand side of the Desktop Entry Editor interface contains a list
 application launchers found on your system in [XDG_DATA_DIRS][9]. By default you
 will only see application launchers for which you have write permissions. To
 see all application launchers, you can select `View > Show read-only-files`.
@@ -87,11 +71,11 @@ edit any of the recognized [Desktop Entry keys][10]. As the 'Advanced' tab
 allows free-form typing, you should validate your changes by selecting
 `Tools > Validate` before you save.
 
-To get your application launcher to appear in the system menu, overview, or 
+To get your application launcher to appear in the system menu, overview, or
 search, you can try running the following command as root:
 
     update-desktop-database
-    
+
 That will not work for all desktop environments and you may need to log out and
 then log back in before your application launcher is available.
 
@@ -102,15 +86,14 @@ Bug Reports <a id="bugs"/>
 
 Report bugs on the GitHub [Issues Page][8].
 
-    
+
 [1]: http://standards.freedesktop.org/desktop-entry-spec/latest/
-[2]: http://static.micahcarrick.com/media/images/desktop-entry-editor/desktop-entry-editor-basic.png
-[3]: https://github.com/Quixotix/desktop-entry-editor/downloads
+[2]: screenshot.png
+[3]: https://github.com/MicahCarrick/desktop-entry-editor/releases
 [4]: http://www.gtk.org
 [5]: http://ftp.gnome.org/pub/GNOME/sources/pygobject/3.0/
 [6]: http://ftp.acc.umu.se/pub/gnome/sources/gtksourceview/
 [7]: http://www.freedesktop.org/wiki/Software/pyxdg
-[8]: https://github.com/Quixotix/desktop-entry-editor/issues
+[8]: https://github.com/MicahCarrick/desktop-entry-editor/issues
 [9]: http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
 [10]: http://standards.freedesktop.org/desktop-entry-spec/latest/ar01s05.html
-

@@ -5,7 +5,7 @@ AC_PREREQ([2.60])
 dnl initialize autoconf
 
 AC_INIT([Desktop Entry Editor],
-        [0.1.1],
+        [0.1.2],
         [https://github.com/Quixotix/desktop-entry-editor/issues],
         [desktop-entry-editor],
         [https://github.com/Quixotix/desktop-entry-editor])
@@ -70,4 +70,3 @@ src/Makefile
 src/desktop-entry-editor
 src/dee/Makefile
 ])
-

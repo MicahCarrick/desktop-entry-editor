@@ -1,4 +1,4 @@
-MicahCarrickDesktop Entry Editor
+Desktop Entry Editor
 ===========================================================
 
 Desktop Entry Editor is a GUI application for editing and creating application

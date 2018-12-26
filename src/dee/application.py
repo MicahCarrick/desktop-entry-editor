@@ -374,7 +374,7 @@ class Application(object):
         """
         def new_hook(etype, evalue, etraceback):
             if etype not in (KeyboardInterrupt, SystemExit):
-                url = "https://github.com/Quixotix/desktop-entry-editor/issues/new" \
+                url = "https://github.com/MicahCarrick/desktop-entry-editor/issues/new" \
                       "?title=Bug Report: %s" \
                       "&body=Please paste your bug report here with CTRL+V.%%0A" \
                       % (evalue)

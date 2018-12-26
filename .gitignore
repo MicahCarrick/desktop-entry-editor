@@ -2,10 +2,12 @@
 *.tar.gz
 
 aclocal.m4
+compile
 config.log
 configure
 config.status
 install-sh
+INSTALL
 Makefile
 Makefile.in
 missing

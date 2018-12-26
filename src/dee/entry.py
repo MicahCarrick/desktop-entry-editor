@@ -1,6 +1,7 @@
 import os
 from xdg.DesktopEntry import DesktopEntry
 import gi
+gi.require_version('Gtk', '3.0')
 from gi.repository import GdkPixbuf, Gtk
 
 def get_icon_pixbuf(icon, size):

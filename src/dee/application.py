@@ -4,11 +4,17 @@ import sys
 import logging
 import subprocess
 import tempfile
+
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('Gdk', '3.0')
+gi.require_version('Pango', '1.0')
+gi.require_version('GtkSource', '3.0')
 from gi.repository import GObject, Gio
 from gi.repository import Pango
 from gi.repository import Gdk, GdkPixbuf, Gtk, GLib
-# TODO: GtkSourceView should be optional
 from gi.repository import GtkSource
+
 from dee.entry import Entry, get_icon_pixbuf
 from dee.exceptiondialog import ExceptionDialog
 from xdg.Exceptions import  ParsingError, ValidationError
@@ -22,16 +28,16 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
 
 class Application(object):
-    
+
     APP_NAME = "Desktop Entry Editor"
     APP_DESCRIPTION = "A Desktop Entry editor based on freedesktop.org specifications."
-    
+
     STATE_NORMAL = 0
-    STATE_LOADING = 1    
+    STATE_LOADING = 1
     BASIC_TAB = 0
     ADVANCED_TAB = 1
     SOURCE_TAB = 2
-    
+
     # http://standards.freedesktop.org/desktop-entry-spec/latest/ar01s05.html
     ALL_KEYS = (
         ('Type', 'This specification defines 3 types of desktop entries: Application (type 1), Link (type 2) and Directory (type 3). To allow the addition of new types in the future, implementations should ignore desktop entries with an unknown type.', str),
@@ -54,7 +60,7 @@ class Application(object):
         ('StartupWMClass','If specified, it is known that the application will map at least one window with the given string as its WM class or WM name hint (see the Startup Notification Protocol Specification for more details).',str),
         ('URL','If entry is Link type, the URL to access.',str)
     )
-    
+
     def close_file(self):
         """
         Close the currently open desktop entry file.
@@ -62,7 +68,7 @@ class Application(object):
         self._entry = None
         self._load_desktop_entry_ui()
         # TODO deselect tree view
-    
+
     def _ensure_user_dir(self):
         """
         Ensures the user's applications directory exists.
@@ -70,19 +76,19 @@ class Application(object):
         path = os.path.join(xdg_data_home, "applications")
         if not os.path.exists(path):
             os.makedirs(path)
-        
+
     def error_dialog(self, message):
         """ Display a very basic error dialog. """
         logger.warn(message)
         dialog = Gtk.MessageDialog(self.window,
-                                   Gtk.DialogFlags.MODAL | 
+                                   Gtk.DialogFlags.MODAL |
                                    Gtk.DialogFlags.DESTROY_WITH_PARENT,
-                                   Gtk.MessageType.ERROR, Gtk.ButtonsType.OK, 
+                                   Gtk.MessageType.ERROR, Gtk.ButtonsType.OK,
                                    message)
         dialog.set_title("Error")
         dialog.run()
         dialog.destroy()
-    
+
     def overwrite_existing_file_dialog(self, filename):
         """
         Prompt the user to overwrite an existing file.
@@ -91,21 +97,21 @@ class Application(object):
             message = "A file named %s already exists.\nDo you want to replace it?" \
                 % os.path.basename(filename)
             dialog = Gtk.MessageDialog(self.window,
-                                       Gtk.DialogFlags.MODAL | 
+                                       Gtk.DialogFlags.MODAL |
                                        Gtk.DialogFlags.DESTROY_WITH_PARENT,
-                                       Gtk.MessageType.QUESTION, Gtk.ButtonsType.YES_NO, 
+                                       Gtk.MessageType.QUESTION, Gtk.ButtonsType.YES_NO,
                                        message)
             dialog.set_title('Overwrite Existing File?')
             r = dialog.run()
             dialog.destroy()
-            
+
             if r == Gtk.ResponseType.YES:
                 return True
             else:
                 return False
-                
+
         return True
-        
+
     def _get_app_icon_pixbuf(self, size=None):
         """
         Get a new GdkPixbuf for the app's main icon rendered at size.
@@ -118,35 +124,35 @@ class Application(object):
         else:
             pixbuf = GdkPixbuf.Pixbuf.new_from_file(pixbuf_file)
         return pixbuf
-    
+
     def info_dialog(self, message, title="Information"):
         """ Display a very basic info dialog. """
         dialog = Gtk.MessageDialog(self.window,
-                                   Gtk.DialogFlags.MODAL | 
+                                   Gtk.DialogFlags.MODAL |
                                    Gtk.DialogFlags.DESTROY_WITH_PARENT,
-                                   Gtk.MessageType.INFO, Gtk.ButtonsType.OK, 
+                                   Gtk.MessageType.INFO, Gtk.ButtonsType.OK,
                                    message)
         dialog.set_title(title)
         dialog.run()
         dialog.destroy()
-        
+
     def __init__(self, package, version, data_dir, debug=False):
         """
         Build UI from Glade XML file found in self.DATA_DIR.
         """
         if debug:
             logger.setLevel(logging.DEBUG)
-            
+
         self.PACKAGE = package
         self.VERSION = version
         self.DATA_DIR = data_dir
         self.UI_DIR = os.path.join(data_dir, 'ui')
-        
+
         logger.debug("-"*60)
         logger.debug("  %s %s" % (self.PACKAGE, self.VERSION))
         logger.debug("  DATA DIR: " + self.DATA_DIR)
         logger.debug("-"*60)
-        
+
         builder = Gtk.Builder()
         try:
             builder.add_from_file(os.path.join(self.UI_DIR, "main_window.ui"))
@@ -164,7 +170,7 @@ class Application(object):
         self._init_basic_tab(builder)
         self._init_advanced_tab(builder)
         self._init_source_tab(builder)
-        
+
         self._type_application_widgets = (
             builder.get_object("terminal_label"),
             builder.get_object("terminal_checkbutton"),
@@ -173,25 +179,25 @@ class Application(object):
             builder.get_object("exec_open_button"),
         )
         self._type_directory_widgets = (
-        
+
         )
         self._type_link_widgets = (
             builder.get_object("url_label"),
             builder.get_object("url_entry"),
         )
-        
+
         builder.connect_signals(self)
         self._state = self.STATE_NORMAL
         self.close_file()
-    
+
     def _init_settings(self):
         """
         Initialize a GSettings object and connect callbacks.
         """
         self._settings = Gio.Settings.new(SETTINGS_SCHEMA)
-        self._settings.connect("changed::show-read-only-files", 
+        self._settings.connect("changed::show-read-only-files",
                                lambda settings,key: self._load_treeview())
-        
+
     def _init_source_tab(self, builder):
         """
         Initialize a GtkSourceView to show the desktop entry in the 'Source' tab
@@ -210,8 +216,8 @@ class Application(object):
         scrolled_window.show_all()
         # temporary until code for editing source is fixed
         self._sourceview.set_editable(False)
-        
-        
+
+
     def _init_treeview(self, builder):
         """
         Initialize the tree view's model and columns.
@@ -227,7 +233,7 @@ class Application(object):
         model.set_sort_column_id(1, Gtk.SortType.ASCENDING)
         self._treeview.set_model(model)
         self._treeview.set_headers_visible(False)
-        
+
         column = Gtk.TreeViewColumn("Launchers")
         cell = Gtk.CellRendererPixbuf()
         column.pack_start(cell, False)
@@ -236,10 +242,10 @@ class Application(object):
         column.pack_start(cell, True)
         column.add_attribute(cell, "markup", 4)
         self._treeview.append_column(column)
-        
+
         self._missing_pixbuf = self.window.render_icon_pixbuf(Gtk.STOCK_MISSING_IMAGE,
                                                               Gtk.IconSize.MENU)
-    
+
     def _init_advanced_tab(self, builder):
         """
         Initialize the advanced tab with a treeview of key/values.
@@ -252,13 +258,13 @@ class Application(object):
         model.set_sort_column_id(0, Gtk.SortType.ASCENDING)
         treeview.set_model(model)
         treeview.set_headers_visible(True)
-        
+
         column = Gtk.TreeViewColumn("Key")
         cell = Gtk.CellRendererText()
         column.pack_start(cell, True)
         column.add_attribute(cell, "text", 0)
         treeview.append_column(column)
-        
+
         column = Gtk.TreeViewColumn("Value")
         cell = Gtk.CellRendererText()
         cell.set_property("editable", True)
@@ -266,7 +272,7 @@ class Application(object):
         column.pack_start(cell, True)
         column.add_attribute(cell, "text", 1)
         treeview.append_column(column)
-        
+
     def _init_basic_tab(self, builder):
         """
         Initialize the the "Basic" tab with the minimum fields for a launcher.
@@ -277,21 +283,21 @@ class Application(object):
         self._exec_entry = builder.get_object("exec_entry")
         self._url_entry = builder.get_object("url_entry")
         self._terminal_checkbutton = builder.get_object("terminal_checkbutton")
-        
+
         # populate type combo box
         model = Gtk.ListStore(GObject.TYPE_STRING)
         model.append(("Application",))
         model.append(("Directory",))
         model.append(("Link",))
-        
+
         cell = Gtk.CellRendererText()
         self._type_combo.pack_start(cell, True)
         self._type_combo.add_attribute(cell, "text", 0)
-        
+
         self._type_combo.set_model(model)
         self._type_combo.set_id_column(0)
         self._type_combo.set_active_id("Application")
-    
+
     def _init_menu_and_toolbar(self, builder):
         """
         Load the menu and toolbar from the UI definitions file.
@@ -299,7 +305,7 @@ class Application(object):
         manager = Gtk.UIManager()
         accelgroup = manager.get_accel_group()
         self.window.add_accel_group(accelgroup)
-        
+
         # global actions are always sensitive
         self._app_actions = Gtk.ActionGroup("AppActions")
         self._app_actions.add_actions([
@@ -311,28 +317,28 @@ class Application(object):
                 self.on_file_new_activate),
             ('Open', Gtk.STOCK_OPEN, None, None, "Open file",
                 self.on_file_open_activate),
-            ('Quit', Gtk.STOCK_QUIT, None, None, None, 
+            ('Quit', Gtk.STOCK_QUIT, None, None, None,
                 self.quit),
             ('Refresh', Gtk.STOCK_REFRESH, None, None, "Refresh list",
                 self.on_view_refresh_activate),
-            ('About', Gtk.STOCK_ABOUT, None, None, None, 
+            ('About', Gtk.STOCK_ABOUT, None, None, None,
                 self.on_help_about_activate),
         ])
         self._app_actions.add_toggle_actions([
-            ('ViewReadOnly', None, "Show _read-only files", None, None, 
-                self.on_view_read_only_toggled, 
+            ('ViewReadOnly', None, "Show _read-only files", None, None,
+                self.on_view_read_only_toggled,
                 self._settings.get_boolean("show-read-only-files")),
-            #('ViewToolbar', None, "_Toolbar", None, None, 
+            #('ViewToolbar', None, "_Toolbar", None, None,
             #    self.on_view_toolbar_toggled, False),
         ])
-           
+
         self._save_actions = Gtk.ActionGroup("SaveActions")
         self._save_actions.add_actions([
             ('Save', Gtk.STOCK_SAVE, None, None, "Save current file",
                 self.on_file_save_activate),
         ])
         self._save_actions.set_sensitive(False)
-        
+
         self._open_actions = Gtk.ActionGroup("OpenActions")
         self._open_actions.add_actions([
             ('SaveAs', Gtk.STOCK_SAVE_AS, None, None, None,
@@ -342,25 +348,25 @@ class Application(object):
             ('Validate', None, "Validate", None, None,
                 self.on_tools_validate_activate),
         ])
-        
+
         manager.insert_action_group(self._app_actions)
         manager.insert_action_group(self._save_actions)
         manager.insert_action_group(self._open_actions)
-        
+
         ui_file = os.path.join(self.UI_DIR, 'menu_toolbar.ui')
         manager.add_ui_from_file(ui_file)
         menu = manager.get_widget('ui/MenuBar')
         toolbar = manager.get_widget('ui/MainToolbar')
-        
+
         self._ui_manager = manager
-        
+
         # pack into main interface box
         box = builder.get_object("main_box")
         box.pack_start(toolbar, False, True, 0)
         box.pack_start(menu, False, True, 0)
         box.reorder_child(menu, 0)
         box.reorder_child(toolbar, 1)
-    
+
     def install_exception_hook(self):
         """
         Install an exception hook to display unhandled exceptions in a dialog
@@ -387,7 +393,7 @@ class Application(object):
         old_hook = sys.excepthook
         sys.excepthook = new_hook
         return old_hook
-        
+
     def _load_desktop_entry_ui(self):
         """
         Load the current Entry into the various widgets of the GUI.
@@ -408,33 +414,33 @@ class Application(object):
             self._notebook.set_sensitive(False)
             self._state = self.STATE_NORMAL
             return
-            
+
         # statusbar
         self._status_push(entry.filename)
-        
+
 
         # populate basic tab
         self._update_basic_tab()
-        
+
         # populate advanced tab
 
         # load file into source view
         self._update_source_tab()
-            
+
         self._open_actions.set_sensitive(True)
         self._notebook.set_sensitive(True)
         self._state = self.STATE_NORMAL
-        
+
     def _load_treeview(self):
         """
         Load the treeview with the .desktop entries found at path.
         """
-        
+
         self._treeview.get_bin_window().set_cursor(Gdk.Cursor(Gdk.CursorType.WATCH))
         self._status_push("Loading...")
         while Gtk.events_pending():
             Gtk.main_iteration()
-        
+
         model = self._treeview.get_model()
         model.clear()
         #
@@ -457,18 +463,18 @@ class Application(object):
                 else:
                     tooltip = entry.getName()
                 tooltip = GLib.markup_escape_text(tooltip)
-                
+
                 markup = GLib.markup_escape_text(entry.getName())
                 if entry.isReadOnly():
                     if show_ro:
                         markup = "<span color='#888888'>%s</span>" % markup
                     else:
                         continue # skip read-only per settings
-                
+
                 model.append((pixbuf, entry.getName(), desktop_file, tooltip, markup,))
         self._treeview.get_bin_window().set_cursor(None)
         self._status_pop()
-        
+
     def new_file(self):
         """
         Create a new, empty desktop entry.
@@ -485,7 +491,7 @@ class Application(object):
             self.save_file(filename)
             return
         self._entry = old_entry
-    
+
     def on_advanced_treeview_edited(self, cell, path, new_text, treeview):
         """
         Update the treeview and the entry when the treeview values are edited.
@@ -494,45 +500,45 @@ class Application(object):
         key = model[path][0]
         model[path][1] = new_text
         self._ui_value_changed(key, new_text)
-        
+
     def on_type_combo_changed(self, combo, data=None):
         type_str = combo.get_model()[combo.get_active()][0]
         self._ui_value_changed("Type", type_str)
         if self._entry:
             self._update_basic_tab()
-        
+
     def on_exec_entry_changed(self, entry, data=None):
         self._ui_value_changed("Exec", entry.get_text())
-        
+
     def on_exec_entry_icon_press(self, entry, icon_pos, event, data=None):
         """
         Execute the command when the user presses the icon in the entry.
         """
         # TODO async? Wait for retval?
-        if not self._entry:     
+        if not self._entry:
             return
         retval = subprocess.call(self._entry.getExec(), shell=True)
         logger.debug("Exited with code " + str(retval))
-    
+
     def on_file_close_activate(self, action, data=None):
         self.close_file()
-    
+
     def on_file_new_activate(self, action, data=None):
         self.new_file()
-    
+
     def on_file_open_activate(self, action, data=None):
         filename = self.open_dialog()
         if filename:
             self.open_file(filename)
-        
+
     def on_file_save_activate(self, action, data=None):
         self.save_file(self._entry.filename)
-    
+
     def on_file_save_as_activate(self, action, data=None):
         filename = self.save_dialog()
         if filename:
             self.save_file(filename)
-        
+
     def on_help_about_activate(self, action, data=None):
         """
         Show the about dialog.
@@ -576,19 +582,19 @@ class Application(object):
         button = builder.get_object("close_button")
         button.connect("clicked", lambda button,dialog: dialog.destroy(), dialog)
         dialog.set_transient_for(self.window)
-        
+
         for size in (16,24,32,48,64,128):
             image = builder.get_object("image_%s" % str(size))
             if image:
                 image.set_from_pixbuf(self._entry.getIconPixbuf(size))
         dialog.show()
-    
+
     def on_save_button_clicked(self, button, data=None):
         self.save_file(self._entry.filename)
-    
+
     def on_terminal_button_toggled(self, button, data=None):
         self._ui_value_changed("Terminal", str(button.get_active()).lower())
-    
+
     def on_tools_validate_activate(self, action, data=None):
         """
         Run the validate() method on the entry and show the results in a Gtk
@@ -601,25 +607,25 @@ class Application(object):
             return
         self.info_dialog("%s is valid." % os.path.basename(self._entry.filename),
                          "Validation")
-                
+
     def on_treeview_button_press_event(self, treeview, event, data=None):
         # if user needs to save...
             # return True
         return False
-  
+
     def on_main_window_map_event(self, window, event, data=None):
         #while Gtk.events_pending():
         #    Gtk.main_iteration()
         pass
-    
+
     def on_main_window_show(self, window, data=None):
-        self._ensure_user_dir()        
+        self._ensure_user_dir()
         self._load_treeview()
         pass
-    
+
     def on_name_entry_changed(self, entry, data=None):
         self._ui_value_changed("Name", entry.get_text())
-            
+
     def on_notebook_switch_page(self, notebook, page, data=None):
         index = self._notebook.get_current_page()
         if index == self.SOURCE_TAB:
@@ -636,26 +642,26 @@ class Application(object):
         model, iter = selection.get_selected()
         if model and iter:
             self.open_file(model.get_value(iter, 2))
-    
+
     def on_url_entry_changed(self, entry, data=None):
         self._ui_value_changed("URL", entry.get_text())
-    
+
     def on_url_entry_icon_press(self, entry, icon_pos, event, data=None):
         if not self._entry:
             return
         subprocess.call(["xdg-open", self._entry.getURL()])
-        
+
     def on_view_read_only_toggled(self, action, data=None):
         self._settings.set_boolean("show-read-only-files",
                                     action.get_active())
-    
+
     def on_view_refresh_activate(self, action, data=None):
         self._load_treeview()
-                                    
+
     def on_view_toolbar_toggled(self, action, data=None):
         # TODO
         raise Exception("Testing")
-    
+
     def open_dialog(self):
         """
         Return a user-selected save filename or None if the user cancels.
@@ -663,7 +669,7 @@ class Application(object):
         filename = None
         chooser = Gtk.FileChooserDialog("Open File...", self.window,
                                         Gtk.FileChooserAction.OPEN,
-                                        (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, 
+                                        (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                                          Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
         for path in xdg_data_dirs:
             path = os.path.join(path, "applications")
@@ -671,16 +677,16 @@ class Application(object):
                 chooser.set_current_folder(path)
                 break
         filter = Gtk.FileFilter()
-        filter.add_pattern("*.desktop")  
+        filter.add_pattern("*.desktop")
         filter.add_pattern("*.directory")
         chooser.set_filter(filter)
-        
+
         response = chooser.run()
-        if response == Gtk.ResponseType.OK: 
+        if response == Gtk.ResponseType.OK:
             filename = chooser.get_filename()
         chooser.destroy()
         return filename
-        
+
     def open_file(self, desktop_file):
         """
         Open the specified desktop file.
@@ -691,7 +697,7 @@ class Application(object):
         except ParsingError, e:
             self.error_dialog(e)
             return
-        
+
         self._load_desktop_entry_ui()
         # validate in save
         """
@@ -701,30 +707,30 @@ class Application(object):
             self.error_dialog(e)
             return
         """
-          
+
     def quit(self, widget=None, data=None):
         """
         Used as callback for both user quit (File > Quit) and window manager
         killing the window.
         """
         Gtk.main_quit()
-        
+
     def run(self):
         """
         Show the main application window and enter GTK+ main loop.
-        """      
+        """
         self.window.show()
         Gtk.main()
-    
+
     def save_dialog(self):
         """
         Return a user-selected save filename or None if the user cancels.
         """
         filename = None
-        
+
         chooser = Gtk.FileChooserDialog("Save File...", self.window,
                                         Gtk.FileChooserAction.SAVE,
-                                        (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, 
+                                        (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                                          Gtk.STOCK_SAVE, Gtk.ResponseType.OK))
         if self._entry and self._entry.filename:
             chooser.set_filename(self._entry.filename)
@@ -734,42 +740,42 @@ class Application(object):
                 if os.path.exists(path) and os.access(path, os.W_OK):
                     chooser.set_current_folder(path)
                     break
-                    
+
         response = chooser.run()
-        if response == Gtk.ResponseType.OK: 
+        if response == Gtk.ResponseType.OK:
             filename = chooser.get_filename()
         chooser.destroy()
         if filename:
             if not self.overwrite_existing_file_dialog(filename):
                 filename = None
         return filename
-        
+
     def save_file(self, filename):
-        # TODO confirm user wants to save if the file is invalid             
+        # TODO confirm user wants to save if the file is invalid
         self._entry.write(filename)
         self._load_treeview()
         self.set_modified(False)
         self._load_desktop_entry_ui()
-        
+
     def set_modified(self, modified=True):
         """
         Set the modified flag on the entry and update the titlebar
         """
         self._entry.is_modified = modified
         self._update_ui()
-    
+
     def _status_pop(self):
         """
         Pop the last status message off the statusbar.
         """
         self._statusbar.pop(self._statusbar_ctx)
-        
+
     def _status_push(self, status):
         """
         Push a status message into the statusbar.
         """
         self._statusbar.push(self._statusbar_ctx, status)
-    
+
     def _ui_value_changed(self, key, value):
         """
         Generic method to handle user changes to the Entry via the GUI.
@@ -778,15 +784,15 @@ class Application(object):
             self.set_modified(True)
         else:
             return # do not continue if we're loading UI
-        
+
         if not value:
             self._entry.removeKey(key)
         else:
             self._entry.set(key, value)
-    
+
     def _update_advanced_tab(self):
         """
-        Update the advanced tab based on the current state of the Entry.        
+        Update the advanced tab based on the current state of the Entry.
         """
         model = self._advanced_treeview.get_model()
         model.clear()
@@ -797,13 +803,13 @@ class Application(object):
                 value = None
             tooltip = GLib.markup_escape_text(tooltip)
             model.append((key, value, tooltip,))
-    
+
     def _update_basic_tab(self):
         """
-        Update the basic tab based on the current state of the Entry.        
+        Update the basic tab based on the current state of the Entry.
         """
         entry = self._entry
-        
+
         # hide widgets based on type
         [widget.set_visible(False) for widget in self._type_link_widgets]
         [widget.set_visible(False) for widget in self._type_directory_widgets]
@@ -815,7 +821,7 @@ class Application(object):
             [widget.set_visible(True) for widget in self._type_link_widgets]
         else:
             [widget.set_visible(True) for widget in self._type_application_widgets]
-            
+
         self._type_combo.set_active_id(entry.getType())
         self._name_entry.set_text(entry.getName())
         self._icon_entry.set_text(entry.getIcon())
@@ -823,7 +829,7 @@ class Application(object):
         self._terminal_checkbutton.set_active(entry.getTerminal())
         self._url_entry.set_text(entry.getURL())
 
-            
+
     def _update_source_tab(self):
         """
         Update the source tab with the contents of what the .desktop file would
@@ -842,20 +848,20 @@ class Application(object):
             buffer.set_text(f.read())
         f.closed
         #self._sourceview.set_editable(True)
-        
+
         # clean up
         if fd:
             os.close(fd)
         if filename:
             os.remove(filename)
         entry.filename = original_filename
-        
+
     def _update_ui(self):
         """
         Update the UI to reflect the state of the the current Entry.
         """
         entry = self._entry
-        
+
         # titlebar
         if not entry:
             self.window.set_title(self.APP_NAME)
@@ -866,10 +872,10 @@ class Application(object):
             if entry.is_modified:
                 modified_indicator = "*"
             self.window.set_title("%s%s %s - %s" % (modified_indicator,
-                                                    os.path.basename(entry.filename), 
+                                                    os.path.basename(entry.filename),
                                                     read_only,
                                                     self.APP_NAME))
-        # save buttons 
+        # save buttons
         if entry and entry.isModified() and not entry.isReadOnly():
             self._save_actions.set_sensitive(True)
         else:

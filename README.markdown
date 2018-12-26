@@ -34,23 +34,7 @@ these additional packages:
 * Autotools (`automake`, `autoconf`, `intltool`, `m4`, `gettext`)
 
 
-### Build a Release Version ###
-
-Download the latest release from the [Downloads Page][3] and then run:
-
-    tar -xzf desktop-entry-editor-x.x.x.tar.gz
-    cd desktop-entry-editor-x.x.x
-    ./configure
-    make
-
-_Note: replace `x.x.x` with the version number from the file you downloaded._
-
-Become root user (`su` or `sudo`) and then run:
-
-    make install
-
-
-### Build the Development Version ###
+### Build Instructions ###
 
     git clone https://github.com/MicahCarrick/desktop-entry-editor.git
     cd desktop-entry-editor
@@ -105,7 +89,7 @@ Report bugs on the GitHub [Issues Page][8].
 
 [1]: http://standards.freedesktop.org/desktop-entry-spec/latest/
 [2]: screenshot.png
-[3]: https://github.com/MicahCarrick/desktop-entry-editor/downloads
+[3]: https://github.com/MicahCarrick/desktop-entry-editor/releases
 [4]: http://www.gtk.org
 [5]: http://ftp.gnome.org/pub/GNOME/sources/pygobject/3.0/
 [6]: http://ftp.acc.umu.se/pub/gnome/sources/gtksourceview/

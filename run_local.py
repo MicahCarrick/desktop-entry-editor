@@ -6,11 +6,11 @@ import os
 python_dir = "@pythondir@".replace("${prefix}", "@prefix@")
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'src'))
 
-print sys.path
+print (sys.path)
 
 try:
     from dee.application import Application 
-except ImportError, e:
+except ImportError as e:
     sys.exit(str(e))
  
 if __name__ == "__main__":

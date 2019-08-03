@@ -452,7 +452,7 @@ class Application(object):
                 #logger.debug(desktop_file)
                 try:
                     entry = Entry(desktop_file)
-                except ParsingError, e:
+                except ParsingError as e:
                     logger.warn(e)
                     continue # skip entries with parse errors
 
@@ -602,7 +602,7 @@ class Application(object):
         """
         try:
             self._entry.validate()
-        except ValidationError, e:
+        except ValidationError as e:
             self.error_dialog(e)
             return
         self.info_dialog("%s is valid." % os.path.basename(self._entry.filename),
@@ -694,7 +694,7 @@ class Application(object):
         # TODO make sure this desktop file is selected in the list
         try:
             self._entry = Entry(desktop_file)
-        except ParsingError, e:
+        except ParsingError as e:
             self.error_dialog(e)
             return
 

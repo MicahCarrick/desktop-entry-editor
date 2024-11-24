@@ -9,7 +9,7 @@ data_dir = "@datarootdir@".replace("${prefix}", "@prefix@")
 
 try:
     from dee.application import Application 
-except ImportError, e:
+except ImportError as e:
     sys.exit(str(e))
  
 if __name__ == "__main__":

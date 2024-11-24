@@ -448,7 +448,7 @@ class Application(object):
         for path in xdg_data_dirs:
             path = os.path.join(path, "applications")
             logger.debug("Loading desktop entries from %s" % path)
-            for desktop_file in glob.glob(os.path.join(path, "*.desktop")):
+            for desktop_file in glob.glob(os.path.join(path, u"*.desktop")):
                 #logger.debug(desktop_file)
                 try:
                     entry = Entry(desktop_file)
